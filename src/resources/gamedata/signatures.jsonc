@@ -1,0 +1,28 @@
+{
+  "TriggerPush_Touch": {
+    "lib": "server",
+    "windows": "40 55 53 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 48 8B 02 48 8B F9",
+    "linux": "55 48 89 E5 41 57 41 56 41 55 49 89 F5 41 54 53 48 89 FB 48 83 EC ? E8 ? ? ? ? 84 C0"
+  },
+  "ServerMovementUnlock": {
+    "lib": "server",
+    "windows": "0F 86 AF ? ? ? 0F 57 C0 0F 2E C2",
+    "linux": "0F 87 ? ? ? ? F3 0F 10 3D ? ? ? ? F3 0F 11 BD ? ? ? ? 48 89 DE"
+  },
+  "CheckJumpButtonWater": {
+    "lib": "server",
+    "windows": "C8 42 EB ? 4C 8B 77 ? 4D 39 6E",
+    "linux": "C8 42 41 C7 84 24 ? ? ? ? ? ? ? ? 41 C7 84 24 ? ? ? ? ? ? ? ? E9"
+  },
+  "CGamePlayerEquip::InputTriggerForAllPlayers": {
+    "lib": "server",
+    "windows": "40 55 53 41 54 41 56 48 8B EC 48 83 EC ? 4C 8B F1",
+    "linux": "55 48 89 E5 41 57 41 56 41 55 49 89 FD 41 54 53 48 83 EC ? E8 ? ? ? ? C7 45"
+  },
+  "CGamePlayerEquip::InputTriggerForActivatedPlayer": {
+    "lib": "server",
+    "windows": "48 89 5C 24 18 56 48 83 EC 20 48 8B 1A",
+    "linux": "55 48 89 E5 41 56 41 55 41 54 53 48 83 EC ? 48 8B 1E"
+  }
+
+}

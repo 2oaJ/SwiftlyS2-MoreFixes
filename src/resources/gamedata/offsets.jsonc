@@ -1,0 +1,10 @@
+{
+  "CBaseTrigger::PassesTriggerFilters": {
+    "windows": 266,
+    "linux": 267
+  },
+  "CBaseEntity::Use": {
+    "windows": 144,
+    "linux": 143
+  }
+}
