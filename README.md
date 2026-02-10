@@ -19,20 +19,20 @@
 
 | 功能分类 | 功能名称 | 状态 | 说明 |
 |---------|---------|:----:|------|
-| **GameData 补丁** | ServerMovementUnlock | ✅ | 服务器移动解锁 |
-| | FixWaterFloorJump | ✅ | 修复水面跳跃 |
-| **Push 机制** | TriggerPush CSGO 风格 | ✅ | 通过 `cs2f_use_old_push` ConVar 控制 |
-| **game_player_equip** | Strip First 修复 | ✅ | 修复 `Use Only` + `Strip First` 组合 |
-| | TriggerForActivatedPlayer 参数 | ✅ | 支持武器类名参数覆盖 |
-| | Only Strip Same Weapon Type | ✅ | 只剥离相同槽位（Spawnflag: 4） |
-| **自定义输入** | IgniteLifetime | ❌ | 点燃玩家（火焰+伤害+减速） |
-| | AddScore | ❌ | 有同类型插件替代 |
-| | SetMessage | ❌ | 有同类型插件替代 |
-| | SetModel | ❌ | 有同类型插件替代 |
-| **自定义实体** | game_ui | ❌ | 游戏 UI 控制（按键监听） |
-| | point_viewcontrol | ❌ | 玩家视角控制 |
-| **过滤器** | Steam ID Filtering | ❌ | 基于 Steam ID 过滤 |
-| **ZE 专属** | Toggle Respawn | ❌ | 切换僵尸重生（仅 ZE 模式） |
+| **GameData 补丁** | ServerMovementUnlock | ✅ |  |
+| | FixWaterFloorJump | ✅ |  |
+| **Push 机制** | TriggerPush CSGO 风格 | ✅ |  |
+| **game_player_equip** | Strip First 修复 | ✅ |  |
+| | TriggerForActivatedPlayer 参数 | ✅ |  |
+| | Only Strip Same Weapon Type | ✅ |  |
+| **自定义输入** | IgniteLifetime | ❌ |  |
+| | AddScore | ❌ | 不考虑移植 |
+| | SetMessage | ❌ | 不考虑移植 |
+| | SetModel | ❌ | 不考虑移植 |
+| **自定义实体** | game_ui | ❌ |  |
+| | point_viewcontrol | ❌ |  |
+| **过滤器** | Steam ID Filtering | ❌ |  |
+| **ZE 专属** | Toggle Respawn | ❌ | 不考虑移植 |
 
 - KeyValueFix请使用专为SwiftlyS2移植的[CS2-CustomIO-For-SW2](https://github.com/himenekocn/CS2-CustomIO-For-SW2)
 
