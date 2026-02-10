@@ -24,28 +24,33 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes
             // 创建依赖注入容器
             var services = new ServiceCollection();
             services.AddSwiftly(core);
-            // 注册GameData补丁服务
-            services.AddSingleton<IGameDataPatchService>(sp =>
-                new GameDataPatchService(Core, sp.GetRequiredService<ILogger<GameDataPatchService>>(), "ServerMovementUnlock"));
+            
+            services.AddKeyedSingleton<IGameDataPatchService>("ServerMovementUnlock", (sp, key) =>
+                new GameDataPatchService(
+                    Core, 
+                    sp.GetRequiredService<ILogger<GameDataPatchService>>(), 
+                    "ServerMovementUnlock"
+                ));
 
-            services.AddSingleton<IGameDataPatchService>(sp =>
-                new GameDataPatchService(Core, sp.GetRequiredService<ILogger<GameDataPatchService>>(), "FixWaterFloorJump"));
+            services.AddKeyedSingleton<IGameDataPatchService>("FixWaterFloorJump", (sp, key) =>
+                new GameDataPatchService(
+                    Core, 
+                    sp.GetRequiredService<ILogger<GameDataPatchService>>(), 
+                    "FixWaterFloorJump"
+                ));
 
             // 注册其他修复服务
-            services.AddSingleton<IStripFixService,StripFixService>();
-
+            services.AddSingleton<IStripFixService, StripFixService>();
             services.AddSingleton<ITriggerPushTouchFixService, TriggerPushTouchFixService>();
-
             services.AddSingleton<ITriggerForPlayerFixService, TriggerForPlayerFixService>();
-
 
             var serviceProvider = services.BuildServiceProvider();
 
             // 获取所有修复服务
             var allServices = new IGameFixService[]
             {
-                serviceProvider.GetRequiredService<IGameDataPatchService>(),  // ServerMovementUnlock
-                serviceProvider.GetRequiredService<IGameDataPatchService>(),  // FixWaterFloorJump (需要单独处理)
+                serviceProvider.GetRequiredKeyedService<IGameDataPatchService>("ServerMovementUnlock"),
+                serviceProvider.GetRequiredKeyedService<IGameDataPatchService>("FixWaterFloorJump"),
                 serviceProvider.GetRequiredService<IStripFixService>(),
                 serviceProvider.GetRequiredService<ITriggerPushTouchFixService>(),
                 serviceProvider.GetRequiredService<ITriggerForPlayerFixService>()
