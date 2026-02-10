@@ -6,9 +6,9 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/build-passing-brightgreen" alt="Build Status">
-  <img src="https://img.shields.io/github/downloads/2oaJ/ZombiEden-SwiftlyS2-MoreFixes/total" alt="Downloads">
-  <img src="https://img.shields.io/github/stars/2oaJ/ZombiEden-SwiftlyS2-MoreFixes?style=flat&logo=github" alt="Stars">
-  <img src="https://img.shields.io/github/license/2oaJ/ZombiEden-SwiftlyS2-MoreFixes" alt="License">
+  <img src="https://img.shields.io/github/downloads/2oaJ/SwiftlyS2-MoreFixes/total" alt="Downloads">
+  <img src="https://img.shields.io/github/stars/2oaJ/SwiftlyS2-MoreFixes?style=flat&logo=github" alt="Stars">
+  <img src="https://img.shields.io/github/license/2oaJ/SwiftlyS2-MoreFixes" alt="License">
 </p>
 
 
