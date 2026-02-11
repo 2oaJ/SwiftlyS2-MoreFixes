@@ -6,5 +6,13 @@
   "CBaseEntity::Use": {
     "windows": 144,
     "linux": 143
+  },
+  "CBaseEntity::Precache": {
+    "windows": 6,
+    "linux": 7
+  },
+  "CBaseEntity::EndTouch": {
+    "windows": 149,
+    "linux": 148
   }
 }

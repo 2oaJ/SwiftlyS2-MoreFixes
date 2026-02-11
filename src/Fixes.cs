@@ -43,6 +43,7 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes
             services.AddSingleton<IStripFixService, StripFixService>();
             services.AddSingleton<ITriggerPushTouchFixService, TriggerPushTouchFixService>();
             services.AddSingleton<ITriggerForPlayerFixService, TriggerForPlayerFixService>();
+            services.AddSingleton<IGravityTouchFixService, GravityTouchFixService>();
 
             var serviceProvider = services.BuildServiceProvider();
 
@@ -53,7 +54,8 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes
                 serviceProvider.GetRequiredKeyedService<IGameDataPatchService>("FixWaterFloorJump"),
                 serviceProvider.GetRequiredService<IStripFixService>(),
                 serviceProvider.GetRequiredService<ITriggerPushTouchFixService>(),
-                serviceProvider.GetRequiredService<ITriggerForPlayerFixService>()
+                serviceProvider.GetRequiredService<ITriggerForPlayerFixService>(),
+                serviceProvider.GetRequiredService<IGravityTouchFixService>()
             };
 
             // 安装所有服务

@@ -19,20 +19,23 @@
 
 | 功能分类 | 功能名称 | 状态 | 说明 |
 |---------|---------|:----:|------|
-| **GameData 补丁** | ServerMovementUnlock | ✅ |  |
+| **GameData Patchs** | ServerMovementUnlock | ✅ |  |
 | | FixWaterFloorJump | ✅ |  |
-| **Push 机制** | TriggerPush CSGO 风格 | ✅ |  |
-| **game_player_equip** | Strip First 修复 | ✅ |  |
-| | TriggerForActivatedPlayer 参数 | ✅ |  |
-| | Only Strip Same Weapon Type | ✅ |  |
-| **自定义输入** | IgniteLifetime | ❌ |  |
+| **Push Fix** | TriggerPushFix | ✅ |  |
+| **trigger_gravity Fix** | Precache Hook | ✅ |  |
+| | GravityTouch Hook | ✅ |  |
+| | EndTouch Hook | ✅ |  |
+| **game_player_equip** | Strip First Fix | ✅ |  |
+| | TriggerForActivatedPlayer Fix | ✅ |  |
+| | TriggerForAllPlayer Fix | ✅ |  |
+| | Only Strip Same Weapon Type Fix | ✅ |  |
+| **KeyValue Input** | IgniteLifetime Input | ❌ |  |
 | | AddScore | ❌ | 不考虑移植 |
 | | SetMessage | ❌ | 不考虑移植 |
 | | SetModel | ❌ | 不考虑移植 |
-| **自定义实体** | game_ui | ❌ |  |
+| **Entity Implementation** | game_ui | ❌ |  |
 | | point_viewcontrol | ❌ |  |
-| **过滤器** | Steam ID Filtering | ❌ |  |
-| **ZE 专属** | Toggle Respawn | ❌ | 不考虑移植 |
+| **Filtering** | Steam ID Filtering | ❌ |  |
 
 - KeyValueFix请使用专为SwiftlyS2移植的[CS2-CustomIO-For-SW2](https://github.com/himenekocn/CS2-CustomIO-For-SW2)
 
