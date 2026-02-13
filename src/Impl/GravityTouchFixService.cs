@@ -302,10 +302,11 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
         {
             try
             {
+                var trigger = core.Memory.ToSchemaClass<CBaseEntity>(pEntity);
                 var other = core.Memory.ToSchemaClass<CBaseEntity>(pOther);
 
                 // 只处理玩家
-                if (other.DesignerName != "player")
+                if (other.DesignerName != "player" || trigger.DesignerName != "trigger_gravity")
                     return;
                 var pawn = other.As<CCSPlayerPawn>();
                 if (!pawn.Valid() || !pawn.IsPlayerAlive())
@@ -332,6 +333,8 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
             {
                 if (_setGravityScaleFunc == null || pEntity == null || !pEntity.IsValid)
                     return;
+                pEntity.GravityScale = flGravityScale;
+                pEntity.GravityScaleUpdated();
                 pEntity.ActualGravityScale = flGravityScale;
                 _setGravityScaleFunc.Call(pEntity.Address, flGravityScale);
             }
