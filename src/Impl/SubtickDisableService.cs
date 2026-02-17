@@ -8,8 +8,8 @@ using ZombiEden.CS2.SwiftlyS2.Fixes.Interface;
 namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
 {
     /// <summary>
-    /// Subtick½ûÓÃ·şÎñÊµÏÖ
-    /// ²Î¿¼: https://github.com/Source2ZE/CS2Fixes/blob/efba3ef3f365a6b2cea356e9189a937b25d75832/src/detours.cpp#L562
+    /// Subtickç¦ç”¨æœåŠ¡å®ç°
+    /// å‚è€ƒ: https://github.com/Source2ZE/CS2Fixes/blob/efba3ef3f365a6b2cea356e9189a937b25d75832/src/detours.cpp#L562
     /// </summary>
     public class SubtickDisableService(
         ISwiftlyCore core,
@@ -21,11 +21,10 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
         private IConVar<bool>? _disableMovementConVar;
         private IConVar<bool>? _disableShootingConVar;
         
-        // »º´æConVarÖµ£¬±ÜÃâÆµ·±¶ÁÈ¡
         private bool _disableMovement = false;
         private bool _disableShooting = false;
         
-        // ±ê¼ÇÊÂ¼şÊÇ·ñÒÑ×¢²á
+        // æ ‡è®°äº‹ä»¶æ˜¯å¦å·²æ³¨å†Œ
         private bool _eventHooked = false;
 
         public void Install()
@@ -38,27 +37,26 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
                     return;
                 }
 
-                // ´´½¨ConVarsÓÃÓÚÔËĞĞÊ±¿ØÖÆ
                 _disableMovementConVar = core.ConVar.CreateOrFind(
                     "sw_disable_subtick_movement",
-                    "½ûÓÃSubtickÒÆ¶¯",
+                    "ç¦ç”¨Subtickç§»åŠ¨",
                     false,
                     ConvarFlags.SERVER_CAN_EXECUTE);
 
                 _disableShootingConVar = core.ConVar.CreateOrFind(
                     "sw_disable_subtick_shooting",
-                    "½ûÓÃSubtickÉä»÷",
+                    "ç¦ç”¨Subtickå°„å‡»",
                     false,
                     ConvarFlags.SERVER_CAN_EXECUTE);
 
-                // ³õÊ¼»¯»º´æÖµ
+                // åˆå§‹åŒ–ç¼“å­˜å€¼
                 _disableMovement = _disableMovementConVar.Value;
                 _disableShooting = _disableShootingConVar.Value;
 
-                // ×¢²áConVarÖµ±ä»¯¼àÌı
+                // æ³¨å†ŒConVarå€¼å˜åŒ–ç›‘å¬
                 core.Event.OnConVarValueChanged += OnConVarValueChanged;
 
-                // ¸ù¾İ³õÊ¼Öµ¾ö¶¨ÊÇ·ñ×¢²áÊÂ¼ş
+                // æ ¹æ®åˆå§‹å€¼å†³å®šæ˜¯å¦æ³¨å†Œäº‹ä»¶
                 UpdateEventHook();
 
                 _isInstalled = true;
@@ -80,10 +78,10 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
 
             try
             {
-                // È¡Ïû×¢²áConVarÖµ±ä»¯¼àÌı
+                // å–æ¶ˆæ³¨å†ŒConVarå€¼å˜åŒ–ç›‘å¬
                 core.Event.OnConVarValueChanged -= OnConVarValueChanged;
 
-                // È¡Ïû×¢²áÊÂ¼şhook
+                // å–æ¶ˆæ³¨å†Œäº‹ä»¶hook
                 UnhookEvent();
 
                 logger.LogInformation($"{ServiceName} uninstalled");
@@ -96,13 +94,12 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
         }
 
         /// <summary>
-        /// ¼àÌıConVarÖµ±ä»¯ÊÂ¼ş
+        /// ç›‘å¬ConVarå€¼å˜åŒ–äº‹ä»¶
         /// </summary>
         private void OnConVarValueChanged(IOnConVarValueChanged @event)
         {
             var convarName = @event.ConVarName;
             
-            // ¼ì²éÊÇ·ñÊÇÎÒÃÇ¹ØĞÄµÄConVar
             if (_disableMovementConVar != null && convarName == _disableMovementConVar.Name)
             {
                 var newValue = bool.Parse(@event.NewValue);
@@ -126,8 +123,8 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
         }
 
         /// <summary>
-        /// ¸ù¾İConVarÖµ¶¯Ì¬×¢²á/×¢ÏúÊÂ¼ş´¦ÀíÆ÷
-        /// Ö»ÒªÓĞÒ»¸ö¹¦ÄÜ¿ªÆô¾ÍĞèÒªhook
+        /// æ ¹æ®ConVarå€¼åŠ¨æ€æ³¨å†Œ/æ³¨é”€äº‹ä»¶å¤„ç†å™¨
+        /// åªè¦æœ‰ä¸€ä¸ªåŠŸèƒ½å¼€å¯å°±éœ€è¦hook
         /// </summary>
         private void UpdateEventHook()
         {
@@ -135,14 +132,14 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
 
             if (shouldHook && !_eventHooked)
             {
-                // ĞèÒªhookµ«»¹Î´hook
+                // éœ€è¦hookä½†è¿˜æœªhook
                 core.Event.OnClientProcessUsercmds += OnClientProcessUsercmds;
                 _eventHooked = true;
                 logger.LogDebug($"{ServiceName}: OnClientProcessUsercmds hook registered");
             }
             else if (!shouldHook && _eventHooked)
             {
-                // ²»ĞèÒªhookµ«ÒÑ¾­hook
+                // ä¸éœ€è¦hookä½†å·²ç»hook
                 core.Event.OnClientProcessUsercmds -= OnClientProcessUsercmds;
                 _eventHooked = false;
                 logger.LogDebug($"{ServiceName}: OnClientProcessUsercmds hook unregistered");
@@ -150,7 +147,7 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
         }
 
         /// <summary>
-        /// È¡Ïû×¢²áÊÂ¼şhook
+        /// å–æ¶ˆæ³¨å†Œäº‹ä»¶hook
         /// </summary>
         private void UnhookEvent()
         {
@@ -162,19 +159,19 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
         }
 
         /// <summary>
-        /// ´¦Àí¿Í»§¶ËUsercmds,ÒÆ³ıSubtickÊäÈë
-        /// Ê¹ÓÃÒıÓÃ´«µİ±ÜÃâ¿½±´£¬ÌáÉıĞÔÄÜ
+        /// å¤„ç†å®¢æˆ·ç«¯Usercmds,ç§»é™¤Subtickè¾“å…¥
+        /// ä½¿ç”¨å¼•ç”¨ä¼ é€’é¿å…æ‹·è´ï¼Œæå‡æ€§èƒ½
         /// </summary>
         private void OnClientProcessUsercmds(IOnClientProcessUsercmdsEvent @event)
         {
             try
             {
-                // Ö±½ÓÊ¹ÓÃ»º´æµÄ×Ö¶ÎÖµ£¬±ÜÃâÆµ·±¶ÁÈ¡ConVar
-                // Ê¹ÓÃforÑ­»·¶ø·Çforeach£¬ÒÔ±ãÊ¹ÓÃË÷ÒıÖ±½Ó·ÃÎÊ£¬±ÜÃâÃ¶¾ÙÆ÷¿ªÏú
+                // ç›´æ¥ä½¿ç”¨ç¼“å­˜çš„å­—æ®µå€¼ï¼Œé¿å…é¢‘ç¹è¯»å–ConVar
+                // ä½¿ç”¨forå¾ªç¯è€Œéforeachï¼Œä»¥ä¾¿ä½¿ç”¨ç´¢å¼•ç›´æ¥è®¿é—®ï¼Œé¿å…æšä¸¾å™¨å¼€é”€
                 var usercmds = @event.Usercmds;
                 for (int i = 0; i < usercmds.Count; i++)
                 {
-                    var cmd = usercmds[i]; // Ö±½Ó»ñÈ¡ÒıÓÃ£¬²»´´½¨¸±±¾
+                    var cmd = usercmds[i]; // ç›´æ¥è·å–å¼•ç”¨ï¼Œä¸åˆ›å»ºå‰¯æœ¬
                     
                     if (_disableMovement)
                     {
@@ -194,9 +191,9 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
         }
 
         /// <summary>
-        /// ÒÆ³ıSubtickÒÆ¶¯ÊäÈë
-        /// ¶ÔÓ¦C++´úÂëÖĞµÄsubtick_moves´¦Àí
-        /// Ê¹ÓÃin²ÎÊıÈ·±£°´ÒıÓÃ´«µİÇÒ²»»áÖØĞÂ¸³Öµ
+        /// ç§»é™¤Subtickç§»åŠ¨è¾“å…¥
+        /// å¯¹åº”C++ä»£ç ä¸­çš„subtick_moveså¤„ç†
+        /// ä½¿ç”¨refå‚æ•°ç¡®ä¿æŒ‰å¼•ç”¨ä¼ é€’
         /// </summary>
         private static void ProcessSubtickMovementRemoval(ref CSGOUserCmdPB cmd)
         {
@@ -205,27 +202,27 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
 
             var moves = cmd.Base.SubtickMoves;
             
-            // Ô¤·ÖÅäÈİÁ¿ÒÔ±ÜÃâList¶¯Ì¬À©Èİ
+            // é¢„åˆ†é…å®¹é‡ä»¥é¿å…ListåŠ¨æ€æ‰©å®¹
             var toKeep = new List<CSubtickMoveStep>(moves.Count);
             
             for (int i = 0; i < moves.Count; i++)
             {
                 var move = moves.Get(i);
-                // ÒÆ³ıÒÆ¶¯°´Å¥µÄsubtickÊäÈë (button >= IN_JUMP && button <= IN_MOVERIGHT && button != IN_USE)
-                // ÒÔ¼°ÒÆ³ıÊÓ½Ç±ä»¯
+                // ç§»é™¤ç§»åŠ¨æŒ‰é’®çš„subtickè¾“å…¥ (button >= IN_JUMP && button <= IN_MOVERIGHT && button != IN_USE)
+                // ä»¥åŠç§»é™¤è§†è§’å˜åŒ–
                 if ((move.Button >= 0x2 && move.Button <= 0x400 && move.Button != 0x20) 
                     || move.PitchDelta != 0.0f 
                     || move.YawDelta != 0.0f)
                 {
-                    // Ìø¹ı£¨¼´ÒÆ³ı£©
+                    // è·³è¿‡ï¼ˆå³ç§»é™¤ï¼‰
                     continue;
                 }
                 
-                // ±£Áô´Ëmove
+                // ä¿ç•™æ­¤move
                 toKeep.Add(move);
             }
             
-            // Ö»ÔÚÓĞ±ä»¯Ê±²ÅÖØ½¨ÁĞ±í
+            // åªåœ¨æœ‰å˜åŒ–æ—¶æ‰é‡å»ºåˆ—è¡¨
             if (toKeep.Count != moves.Count)
             {
                 moves.Clear();
@@ -244,20 +241,21 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
         }
 
         /// <summary>
-        /// ÒÆ³ıSubtickÉä»÷ÊäÈë
+        /// ç§»é™¤Subtickå°„å‡»è¾“å…¥
         /// </summary>
         private static void ProcessSubtickShootingRemoval(ref CSGOUserCmdPB cmd)
         {
-            // Çå³ı¹¥»÷ÀúÊ·Ë÷Òı
+            // æ¸…é™¤æ”»å‡»å†å²ç´¢å¼•
             if (cmd.Attack1StartHistoryIndex != -1)
                 cmd.Attack1StartHistoryIndex = -1;
 
             if (cmd.Attack2StartHistoryIndex != -1)
                 cmd.Attack2StartHistoryIndex = -1;
 
-            // Çå³ıÊäÈëÀúÊ· (¶ÔÓ¦C++µÄmutable_input_history()->Clear())
+            // æ¸…é™¤è¾“å…¥å†å² (å¯¹åº”C++çš„mutable_input_history()->Clear())
             if (cmd.InputHistory?.Count > 0)
                 cmd.InputHistory.Clear();
         }
     }
+
 }
