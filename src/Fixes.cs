@@ -11,7 +11,7 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes
         Id = "ZombiEden.CS2.SwiftlyS2.Fixes",
         Name = "ZombiEden Fixes",
         Author = "ZombiEden",
-        Version = "1.0.3",
+        Version = "1.0.4",
         Description = "僵尸乐园 Fixes",
         Website = "https://zombieden.cn"
     )]
@@ -44,6 +44,7 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes
             services.AddSingleton<ITriggerPushTouchFixService, TriggerPushTouchFixService>();
             services.AddSingleton<ITriggerForPlayerFixService, TriggerForPlayerFixService>();
             services.AddSingleton<IGravityTouchFixService, GravityTouchFixService>();
+            services.AddSingleton<ISubtickDisableService, SubtickDisableService>();
 
             var serviceProvider = services.BuildServiceProvider();
 
@@ -55,7 +56,8 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes
                 serviceProvider.GetRequiredService<IStripFixService>(),
                 serviceProvider.GetRequiredService<ITriggerPushTouchFixService>(),
                 serviceProvider.GetRequiredService<ITriggerForPlayerFixService>(),
-                serviceProvider.GetRequiredService<IGravityTouchFixService>()
+                serviceProvider.GetRequiredService<IGravityTouchFixService>(),
+                serviceProvider.GetRequiredService<ISubtickDisableService>()
             };
 
             // 安装所有服务
