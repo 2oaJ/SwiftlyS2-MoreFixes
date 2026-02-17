@@ -36,6 +36,8 @@
 | **Entity Implementation** | game_ui | ❌ |  |
 | | point_viewcontrol | ❌ |  |
 | **Filtering** | Steam ID Filtering | ❌ |  |
+| **subtick service** | subtick movement disable | ✅ | 需要测试 |
+| | subtick shooting disable | ✅ | 需要测试 |
 
 - KeyValueFix请使用专为SwiftlyS2移植的[CS2-CustomIO-For-SW2](https://github.com/himenekocn/CS2-CustomIO-For-SW2)
 
@@ -44,6 +46,8 @@
 | ConVar | 描述 | 默认值 | 权限 |
 |--------|------|--------|------|
 | `cs2f_use_old_push` | 是否使用 CSGO 风格的旧推动机制 | `false` | SERVER_CAN_EXECUTE |
+| `sw_disable_subtick_movement` | 禁用Subtick移动 | `false` | SERVER_CAN_EXECUTE |
+| `sw_disable_subtick_shooting` | 禁用Subtick射击 | `false` | SERVER_CAN_EXECUTE |
 
 ## 🛡️ 要求
 
