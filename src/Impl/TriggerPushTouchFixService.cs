@@ -131,7 +131,10 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
             }
 
             pOther.BaseVelocity = vecPush;
-            pOther.Flags = flags | (uint)EntityFlags.FL_BASEVELOCITY;
+            pOther.BaseVelocityUpdated();
+
+            pOther.Flags = flags | EntityFlags.FL_BASEVELOCITY;
+            pOther.FlagsUpdated();
         }
 
         public bool PassesTriggerFilters(CBaseTrigger trigger, CBaseEntity entity)
