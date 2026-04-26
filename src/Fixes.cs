@@ -11,7 +11,7 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes
         Id = "ZombiEden.CS2.SwiftlyS2.Fixes",
         Name = "ZombiEden Fixes",
         Author = "ZombiEden",
-        Version = "1.0.9",
+        Version = "1.1.0",
         Description = "僵尸乐园 Fixes",
         Website = "https://zombieden.cn"
     )]
@@ -37,6 +37,8 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes
             AddFixService<IGravityTouchFixService, GravityTouchFixService>(services, fixServiceFactories);
             AddFixService<ISubtickDisableService, SubtickDisableService>(services, fixServiceFactories);
             AddFixService<IGameUIFixService, GameUIFixService>(services, fixServiceFactories);
+            AddFixService<IBlockParticleMsgsFixService, BlockParticleMsgsFixService>(services, fixServiceFactories);
+            AddFixService<ITeleportBorkenFixService, TeleportBorkenFixService>(services, fixServiceFactories);
 
             var serviceProvider = services.BuildServiceProvider();
 

@@ -10,5 +10,9 @@
   "CBaseEntity::Precache": {
     "windows": 7,
     "linux": 8
+  },
+  "CCSPlayerPawn::Teleport": {
+    "windows": 163,
+    "linux": 162
   }
 }
