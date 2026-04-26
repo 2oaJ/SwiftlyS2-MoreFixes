@@ -56,7 +56,7 @@
 | `sw_patch_fix_water_floor_jump_enable` | 启用 `FixWaterFloorJump` GameData 补丁（关闭会撤销已应用的补丁） | `true` | SERVER_CAN_EXECUTE |
 | `cs2f_use_old_push` | 是否使用 CSGO 风格的旧推动机制 | `false` | SERVER_CAN_EXECUTE |
 | `sw_gameuifix_enable` | 启用 `game_ui` 代理实体修复 | `false` | SERVER_CAN_EXECUTE |
-| `cs2f_block_particle_msgs` | 拦截 `CUserMsg_ParticleManager` 消息以缓解客户端卡顿/闪退，实验性功能 | `false` | SERVER_CAN_EXECUTE |
+| `sw_block_particle_msgs_enable` | 拦截 `CUserMsg_ParticleManager` 消息以缓解客户端卡顿/闪退，实验性功能 | `false` | SERVER_CAN_EXECUTE |
 | `sw_teleport_borken_fix_enable` | 启用玩家 Teleport 非 Yaw 角度清理修复 | `false` | SERVER_CAN_EXECUTE |
 | `sw_disable_subtick_movement` | 禁用Subtick移动 | `false` | SERVER_CAN_EXECUTE |
 | `sw_disable_subtick_shooting` | 禁用Subtick射击 | `false` | SERVER_CAN_EXECUTE |

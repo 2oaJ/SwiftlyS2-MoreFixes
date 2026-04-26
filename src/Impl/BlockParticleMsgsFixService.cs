@@ -16,7 +16,7 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
         ISwiftlyCore core,
         ILogger<BlockParticleMsgsFixService> logger) : IBlockParticleMsgsFixService
     {
-        private const string EnableConVarName = "cs2f_block_particle_msgs";
+        private const string EnableConVarName = "sw_block_particle_msgs_enable";
 
         private IConVar<bool>? _enableConVar;
         private Guid? _hookId;
@@ -140,8 +140,7 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
 
         private HookResult OnParticleManagerMessage(CUserMsg_ParticleManager message)
         {
-            message.Recipients.RemoveAllPlayers();
-            return HookResult.Continue;
+            return HookResult.Stop;
         }
     }
 }
