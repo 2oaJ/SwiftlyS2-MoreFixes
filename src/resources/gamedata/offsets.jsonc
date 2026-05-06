@@ -14,5 +14,9 @@
   "CCSPlayerPawn::Teleport": {
     "windows": 163,
     "linux": 162
+  },
+  "CVPhys2World::GetTouchingList": {
+    "windows": 121,
+    "linux": 121
   }
 }

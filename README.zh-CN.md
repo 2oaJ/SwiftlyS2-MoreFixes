@@ -43,6 +43,7 @@
 | | point_viewcontrol | ❌ |  |
 | **Filtering** | Steam ID Filtering | ❌ |  |
 | **Network Message Fix** | BlockParticleMsgsFix | ✅ | 拦截 `CUserMsg_ParticleManager` 以缓解客户端卡顿/闪退，实验性 |
+| **Physics Sim Fix** | ShufflePlayerPhysicsSimFix | ✅ | 打乱物理 touching list 中仍在 touching 的条目，降低玩家碰撞处理顺序偏置 |
 | **subtick service** | subtick movement disable | ✅ | 需要测试 |
 | | subtick shooting disable | ✅ | 需要测试 |
 
@@ -58,6 +59,7 @@
 | `sw_gameuifix_enable` | 启用 `game_ui` 代理实体修复 | `false` | SERVER_CAN_EXECUTE |
 | `sw_block_particle_msgs_enable` | 拦截 `CUserMsg_ParticleManager` 消息以缓解客户端卡顿/闪退，实验性功能 | `false` | SERVER_CAN_EXECUTE |
 | `sw_teleport_borken_fix_enable` | 启用玩家 Teleport 非 Yaw 角度清理修复 | `false` | SERVER_CAN_EXECUTE |
+| `sw_shuffle_player_physics_sim` | 启用物理 touching list 随机排序，降低玩家碰撞处理顺序偏置 | `false` | SERVER_CAN_EXECUTE |
 | `sw_disable_subtick_movement` | 禁用Subtick移动 | `false` | SERVER_CAN_EXECUTE |
 | `sw_disable_subtick_shooting` | 禁用Subtick射击 | `false` | SERVER_CAN_EXECUTE |
 
