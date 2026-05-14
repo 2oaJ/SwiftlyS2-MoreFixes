@@ -39,6 +39,12 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
                 {
                     var push1 = core.Memory.ToSchemaClass<CTriggerPush>(push);
                     var other1 = core.Memory.ToSchemaClass<CBaseEntity>(other);
+                    if (push1 == null || !push1.IsValid || other1 == null || !other1.IsValid)
+                    {
+                        next()(push, other);
+                        return;
+                    }
+                    
                     ProcessTriggerPushTouch(push1, other1, next);
                 });
 
@@ -63,6 +69,8 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
 
         private void ProcessTriggerPushTouch(CTriggerPush pPush, CBaseEntity pOther, Func<TriggerPushTouchContext> next)
         {
+
+
             bool useOldPush = _useOldPush.Value;
             uint spawnFlags = pPush.Spawnflags;
             bool isPushOnce = (spawnFlags & 0x80) != 0;
