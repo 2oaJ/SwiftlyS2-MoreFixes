@@ -4,19 +4,20 @@ using SwiftlyS2.Shared.Convars;
 using SwiftlyS2.Shared.Events;
 using SwiftlyS2.Shared.Memory;
 using SwiftlyS2.Shared.Natives;
+using System.Runtime.InteropServices;
 using ZombiEden.CS2.SwiftlyS2.Fixes.Interface;
 
 namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
 {
     /// <summary>
-    /// 修复 AG2 后玩家模型被非 Yaw 角度 Teleport 后显示异常的问题。
-    /// 参考: https://github.com/Source2ZE/CS2Fixes/commit/8ca812bf51b5cbdf9eaf52ffb7687eacfc99590b
+    /// 修复 AG2 后玩家被 Teleport 后模型异常和视角显示异常的问题。
     /// </summary>
     public unsafe sealed class TeleportBorkenFixService(
         ISwiftlyCore core,
         ILogger<TeleportBorkenFixService> logger) : ITeleportBorkenFixService
     {
         private delegate void CCSPlayerPawn_TeleportDelegate(nint pawn, Vector* position, QAngle* angles, Vector* velocity);
+        private delegate void CBasePlayerPawn__SnapViewAngles_t(nint pPlayerPawn, QAngle* ang);
 
         private const string EnableConVarName = "sw_teleport_borken_fix_enable";
 
@@ -25,6 +26,7 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
         private IConVar<bool>? _enableConVar;
         private Guid? _hookId;
         private IUnmanagedFunction<CCSPlayerPawn_TeleportDelegate>? _hook;
+        private CBasePlayerPawn__SnapViewAngles_t? _fnCBasePlayerPawn__SnapViewAngles;
         private bool _enabled;
         private bool _installed;
 
@@ -46,7 +48,9 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
 
                 _enabled = _enableConVar.Value;
                 core.Event.OnConVarValueChanged += OnConVarValueChanged;
-                UpdateHook();
+                AttachHook();
+
+                _fnCBasePlayerPawn__SnapViewAngles = Marshal.GetDelegateForFunctionPointer<CBasePlayerPawn__SnapViewAngles_t>(core.GameData.GetSignature("CBasePlayerPawn::SnapViewAngles"));
 
                 _installed = true;
                 logger.LogInformation("{ServiceName} 安装完成，当前启用状态: {Enabled}", ServiceName, _enabled);
@@ -102,20 +106,7 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
             }
 
             _enabled = newValue;
-            UpdateHook();
             logger.LogInformation("{ServiceName} 开关切换为 {Enabled}", ServiceName, _enabled);
-        }
-
-        private void UpdateHook()
-        {
-            if (_enabled)
-            {
-                AttachHook();
-            }
-            else
-            {
-                DetachHook();
-            }
         }
 
         private void AttachHook()
@@ -149,8 +140,21 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
                 {
                     return (pawn, position, angles, velocity) =>
                     {
-                        SanitizePlayerTeleportAngles(angles);
-                        original()(pawn, position, angles, velocity);
+                        var trampoline = original();
+
+                        if (!_enabled)
+                        {
+                            trampoline(pawn, position, angles, velocity);
+                            return;
+                        }
+
+                        if (angles != null)
+                        {
+                            _fnCBasePlayerPawn__SnapViewAngles!(pawn, angles);
+                            angles = null;
+                        }
+
+                        trampoline(pawn, position, angles, velocity);
                     };
                 });
 
@@ -181,20 +185,6 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
             {
                 logger.LogError(ex, "卸载 {ServiceName} hook 失败。", ServiceName);
             }
-        }
-
-        private static void SanitizePlayerTeleportAngles(QAngle* angles)
-        {
-            if (angles is null)
-            {
-                return;
-            }
-            
-            if (angles->X != 0.0f)
-                angles->X = 0.0f;
-
-            if (angles->Z != 0.0f)
-                angles->Z = 0.0f;
         }
     }
 }
