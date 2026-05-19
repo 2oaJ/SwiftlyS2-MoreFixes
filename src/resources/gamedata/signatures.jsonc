@@ -6,8 +6,8 @@
   },
   "ServerMovementUnlock": {
     "lib": "server",
-    "windows": "0F 86 B0 ? ? ? 0F 57 C0 0F 2E C2",
-    "linux": "0F 87 ? ? ? ? F3 0F 10 35 ? ? ? ? F3 0F 11 B5"
+    "windows": "0F 86 AF ? ? ? 0F 57 C0 0F 2E C2",
+    "linux": "0F 87 ? ? ? ? F3 0F 10 25 ? ? ? ? F3 0F 11 A5 ? ? ? ? 48 89 DE"
   },
   "CheckJumpButtonWater": {
     "lib": "server",
