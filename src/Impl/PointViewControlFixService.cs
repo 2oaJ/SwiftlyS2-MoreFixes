@@ -34,7 +34,7 @@ public class PointViewControlFixService : IPointViewControlFixService
     {
         try
         {
-            _enableConVar = _core.ConVar.CreateOrFind(EnableConVarName, "启用 pointviewcontrol 修复", true, ConvarFlags.SERVER_CAN_EXECUTE);
+            _enableConVar = _core.ConVar.CreateOrFind(EnableConVarName, "启用 point_viewcontrol 修复", true, ConvarFlags.SERVER_CAN_EXECUTE);
             _enabled = _enableConVar.Value;
 
             _core.Event.OnConVarValueChanged += OnConVarValueChanged;
