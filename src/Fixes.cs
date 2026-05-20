@@ -25,6 +25,9 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes
             var services = new ServiceCollection();
             services.AddSwiftly(Core);
 
+            GameFunctions.Setup(Core);
+            Extensions.Setup(Core);
+
             var fixServiceFactories = new List<(string Name, Func<IServiceProvider, IGameFixService> Factory)>();
 
             AddFixService<ServerMovementUnlockPatchService>(services, fixServiceFactories);
@@ -40,6 +43,7 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes
             AddFixService<IBlockParticleMsgsFixService, BlockParticleMsgsFixService>(services, fixServiceFactories);
             AddFixService<ITeleportBorkenFixService, TeleportBorkenFixService>(services, fixServiceFactories);
             AddFixService<IShufflePlayerPhysicsSimFixService, ShufflePlayerPhysicsSimFixService>(services, fixServiceFactories);
+            AddFixService<IPointViewControlFixService, PointViewControlFixService>(services, fixServiceFactories);
 
             var serviceProvider = services.BuildServiceProvider();
 

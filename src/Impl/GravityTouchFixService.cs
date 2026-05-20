@@ -234,9 +234,9 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
         {
             try
             {
-                
+
                 var entity = core.Memory.ToSchemaClass<CBaseEntity>(pEntity);
-                core.Scheduler.NextWorldUpdate(() => 
+                core.Scheduler.NextWorldUpdate(() =>
                 {
                     if (entity == null || !entity.IsValid)
                         return;
