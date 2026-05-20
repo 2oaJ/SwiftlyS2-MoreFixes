@@ -42,8 +42,8 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
 
                 _enableConVar = core.ConVar.CreateOrFind(
                     EnableConVarName,
-                    "启用玩家 Teleport 非 Yaw 角度清理修复",
-                    false,
+                    "启用玩家 Teleport 角度修复",
+                    true,
                     ConvarFlags.SERVER_CAN_EXECUTE);
 
                 _enabled = _enableConVar.Value;
