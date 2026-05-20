@@ -1,11 +1,11 @@
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
 using SwiftlyS2.Shared;
 using SwiftlyS2.Shared.Convars;
 using SwiftlyS2.Shared.Events;
 using SwiftlyS2.Shared.Memory;
 using SwiftlyS2.Shared.Natives;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using ZombiEden.CS2.SwiftlyS2.Fixes.Interface;
 
 namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl

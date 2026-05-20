@@ -1,4 +1,5 @@
-﻿using SwiftlyS2.Shared.Natives;
+﻿using SwiftlyS2.Shared;
+using SwiftlyS2.Shared.Natives;
 using SwiftlyS2.Shared.SchemaDefinitions;
 using System.Diagnostics.CodeAnalysis;
 
@@ -6,6 +7,13 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes
 {
     public static class Extensions
     {
+        private static ISwiftlyCore? _core;
+
+        public static void Setup(ISwiftlyCore core)
+        {
+            _core = core;
+        }
+
         public static bool IsPlayerAlive(this CCSPlayerPawn? pawn)
         {
             if (!pawn.Valid())
@@ -81,6 +89,21 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes
             mat[2, 3] = pos.Z;
 
             return mat;
+        }
+
+        public static void Disarm(this CBasePlayerWeapon weapon)
+        {
+            ref var globals = ref _core!.Engine.GlobalVars;
+            ref var nextPrimaryAttackTick = ref weapon.NextPrimaryAttackTick.Value;
+            ref var nextSecondaryAttackTick = ref weapon.NextSecondaryAttackTick.Value;
+
+            nextPrimaryAttackTick = int.Max(nextPrimaryAttackTick, globals.TickCount + 24);
+            nextSecondaryAttackTick = int.Max(nextSecondaryAttackTick, globals.TickCount + 24);
+        }
+
+        public static bool IsBot(this CBasePlayerController controller)
+        {
+            return (controller.Flags & (uint)Flags_t.FL_FAKECLIENT) != 0;
         }
     }
 }

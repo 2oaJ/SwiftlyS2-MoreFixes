@@ -20,10 +20,10 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
         private bool _isInstalled = false;
         private IConVar<bool>? _disableMovementConVar;
         private IConVar<bool>? _disableShootingConVar;
-        
+
         private bool _disableMovement = false;
         private bool _disableShooting = false;
-        
+
         // 标记事件是否已注册
         private bool _eventHooked = false;
 
@@ -99,7 +99,7 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
         private void OnConVarValueChanged(IOnConVarValueChanged @event)
         {
             var convarName = @event.ConVarName;
-            
+
             if (_disableMovementConVar != null && convarName == _disableMovementConVar.Name)
             {
                 var newValue = bool.Parse(@event.NewValue);
@@ -172,7 +172,7 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
                 for (int i = 0; i < usercmds.Count; i++)
                 {
                     var cmd = usercmds[i]; // 直接获取引用，不创建副本
-                    
+
                     if (_disableMovement)
                     {
                         ProcessSubtickMovementRemoval(ref cmd);
@@ -201,27 +201,27 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
                 return;
 
             var moves = cmd.Base.SubtickMoves;
-            
+
             // 预分配容量以避免List动态扩容
             var toKeep = new List<CSubtickMoveStep>(moves.Count);
-            
+
             for (int i = 0; i < moves.Count; i++)
             {
                 var move = moves.Get(i);
                 // 移除移动按钮的subtick输入 (button >= IN_JUMP && button <= IN_MOVERIGHT && button != IN_USE)
                 // 以及移除视角变化
-                if ((move.Button >= 0x2 && move.Button <= 0x400 && move.Button != 0x20) 
-                    || move.PitchDelta != 0.0f 
+                if ((move.Button >= 0x2 && move.Button <= 0x400 && move.Button != 0x20)
+                    || move.PitchDelta != 0.0f
                     || move.YawDelta != 0.0f)
                 {
                     // 跳过（即移除）
                     continue;
                 }
-                
+
                 // 保留此move
                 toKeep.Add(move);
             }
-            
+
             // 只在有变化时才重建列表
             if (toKeep.Count != moves.Count)
             {

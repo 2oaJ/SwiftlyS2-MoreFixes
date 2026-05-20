@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Mono.Cecil.Cil;
 using SwiftlyS2.Shared;
 using SwiftlyS2.Shared.Convars;
 using SwiftlyS2.Shared.Memory;
@@ -44,7 +43,7 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
                         next()(push, other);
                         return;
                     }
-                    
+
                     ProcessTriggerPushTouch(push1, other1, next);
                 });
 
