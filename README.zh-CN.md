@@ -41,7 +41,7 @@
 | **Entity Implementation** | game_ui                         |  ✅  | 需要测试                                                        |
 |                                 | TeleportBorkenFix               |  ✅  | 修复 AG2 后玩家被 Teleport 后模型异常和视角显示异常的问题       |
 |                                 | point_viewcontrol               |  ✅  |                                                                 |
-| **Filtering**             | Steam ID Filtering              |  ❌  |                                                                 |
+| **Filtering**             | Steam ID Filtering              |  ✅  |                                                                 |
 | **Network Message Fix**   | BlockParticleMsgsFix            |  ✅  | 拦截 `CUserMsg_ParticleManager` 以缓解客户端卡顿/闪退，实验性 |
 | **Physics Sim Fix**       | ShufflePlayerPhysicsSimFix      |  ✅  | 模拟 CSGO 风格的随机实体碰撞                                    |
 | **subtick service**       | subtick movement disable        |  ✅  | 需要测试                                                        |
@@ -57,12 +57,13 @@
 | `sw_patch_fix_water_floor_jump_enable`   | 启用 `FixWaterFloorJump` GameData 补丁（关闭会撤销已应用的补丁）      | `true`  | SERVER_CAN_EXECUTE |
 | `cs2f_use_old_push`                      | 是否使用 CSGO 风格的旧推动机制                                          | `false` | SERVER_CAN_EXECUTE |
 | `sw_gameuifix_enable`                    | 启用 `game_ui` 代理实体修复                                           | `false` | SERVER_CAN_EXECUTE |
-| `sw_pointviewcontrolfix_enable`          | 启用 `point_viewcontrol` 代理实体修复                                 | `false` | SERVER_CAN_EXECUTE |
+| `sw_pointviewcontrolfix_enable`          | 启用 `point_viewcontrol` 代理实体修复                                 | `true`  | SERVER_CAN_EXECUTE |
 | `sw_block_particle_msgs_enable`          | 拦截 `CUserMsg_ParticleManager` 消息以缓解客户端卡顿/闪退，实验性功能 | `false` | SERVER_CAN_EXECUTE |
-| `sw_teleport_borken_fix_enable`          | 启用玩家 Teleport 角度修复                                             | `false` | SERVER_CAN_EXECUTE |
+| `sw_teleport_borken_fix_enable`          | 启用玩家 Teleport 角度修复                                             | `true`  | SERVER_CAN_EXECUTE |
 | `sw_shuffle_player_physics_sim`          | 启用模拟 CSGO 风格的随机实体碰撞                                        | `false` | SERVER_CAN_EXECUTE |
 | `sw_disable_subtick_movement`            | 禁用Subtick移动                                                         | `false` | SERVER_CAN_EXECUTE |
 | `sw_disable_subtick_shooting`            | 禁用Subtick射击                                                         | `false` | SERVER_CAN_EXECUTE |
+| `sw_map_steamids_enable`                 | 启用 steamid 过滤                                                       | `true`  | SERVER_CAN_EXECUTE |
 
 ## 🛡️ 要求
 

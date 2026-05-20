@@ -3,7 +3,6 @@ using SwiftlyS2.Shared;
 using SwiftlyS2.Shared.Convars;
 using SwiftlyS2.Shared.Events;
 using SwiftlyS2.Shared.GameEventDefinitions;
-using SwiftlyS2.Shared.GameEvents;
 using SwiftlyS2.Shared.Misc;
 using ZombiEden.CS2.SwiftlyS2.Fixes.Impl.CustomEntity;
 using ZombiEden.CS2.SwiftlyS2.Fixes.Interface;
@@ -21,6 +20,7 @@ public class PointViewControlFixService : IPointViewControlFixService
 
     private IConVar<bool>? _enableConVar;
     private bool _enabled;
+    private Guid _eventRoundPrestart;
 
     public PointViewControlFixService(ISwiftlyCore core, ILogger<PointViewControlFixService> logger)
     {
@@ -42,6 +42,8 @@ public class PointViewControlFixService : IPointViewControlFixService
             _core.Event.OnEntityIdentityAcceptInputHook += OnEntityIdentityAcceptInput;
             _core.Event.OnWorldUpdate += OnWorldUpdate;
 
+            _eventRoundPrestart = _core.GameEvent.HookPost<EventRoundPrestart>(OnRoundPrestartPost);
+
             _logger.LogInformation("{ServiceName} 安装完成，当前启用状态: {Enabled}", ServiceName, _enabled);
         }
         catch (Exception ex)
@@ -59,6 +61,8 @@ public class PointViewControlFixService : IPointViewControlFixService
             _core.Event.OnEntitySpawned -= OnEntitySpawned;
             _core.Event.OnEntityIdentityAcceptInputHook -= OnEntityIdentityAcceptInput;
             _core.Event.OnWorldUpdate -= OnWorldUpdate;
+
+            _core.GameEvent.Unhook(_eventRoundPrestart);
 
             _logger.LogInformation("{ServiceName} 已卸载。", ServiceName);
         }
@@ -150,8 +154,7 @@ public class PointViewControlFixService : IPointViewControlFixService
         CPointViewControlHandler.RunThink();
     }
 
-    [GameEventHandler(HookMode.Post)]
-    public static HookResult OnRoundPrestartPost(EventRoundPrestart @event)
+    private HookResult OnRoundPrestartPost(EventRoundPrestart @event)
     {
         CPointViewControlHandler.Shutdown();
 

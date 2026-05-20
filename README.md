@@ -41,7 +41,7 @@
 | **Entity Implementation** | game_ui                         |   ✅   | Needs testing                                                                    |
 |                                 | TeleportBorkenFix               |   ✅   | Fix player Teleport angles after AG2                                             |
 |                                 | point_viewcontrol               |   ✅   |                                                                                  |
-| **Filtering**             | Steam ID Filtering              |   ❌   |                                                                                  |
+| **Filtering**             | Steam ID Filtering              |   ✅   |                                                                                  |
 | **Network Message Fix**   | BlockParticleMsgsFix            |   ✅   | Blocks `CUserMsg_ParticleManager` to mitigate client lag/crashes; experimental |
 | **Physics Sim Fix**       | ShufflePlayerPhysicsSimFix      |   ✅   | Shuffles active physics touching links to reduce player collision ordering bias  |
 | **subtick service**       | subtick movement disable        |   ✅   | Needs testing                                                                    |
@@ -57,12 +57,13 @@ For KeyValue fixes, use the SwiftlyS2-specific [CS2-CustomIO-For-SW2](https://gi
 | `sw_patch_fix_water_floor_jump_enable`   | Enables the `FixWaterFloorJump` GameData patch. Disabling reverts the applied patch.     | `true`  | SERVER_CAN_EXECUTE |
 | `cs2f_use_old_push`                      | Uses the CS:GO-style old push behavior.                                                    | `false` | SERVER_CAN_EXECUTE |
 | `sw_gameuifix_enable`                    | Enables the `game_ui` proxy entity fix.                                                  | `false` | SERVER_CAN_EXECUTE |
-| `sw_pointviewcontrolfix_enable`          | Enables the `point_viewcontrol` proxy entity fix.                                        | `false` | SERVER_CAN_EXECUTE |
+| `sw_pointviewcontrolfix_enable`          | Enables the `point_viewcontrol` proxy entity fix.                                        | `true`  | SERVER_CAN_EXECUTE |
 | `sw_block_particle_msgs_enable`          | Blocks `CUserMsg_ParticleManager` messages to mitigate client lag/crashes. Experimental. | `false` | SERVER_CAN_EXECUTE |
-| `sw_teleport_borken_fix_enable`          | Enables the player Teleport angle fix.                                                    | `false` | SERVER_CAN_EXECUTE |
+| `sw_teleport_borken_fix_enable`          | Enables the player Teleport angle fix.                                                    | `true`  | SERVER_CAN_EXECUTE |
 | `sw_shuffle_player_physics_sim`          | Enables physics touching list shuffle for player collision ordering.                       | `false` | SERVER_CAN_EXECUTE |
 | `sw_disable_subtick_movement`            | Disables subtick movement.                                                                 | `false` | SERVER_CAN_EXECUTE |
 | `sw_disable_subtick_shooting`            | Disables subtick shooting.                                                                 | `false` | SERVER_CAN_EXECUTE |
+| `sw_map_steamids_enable`                 | Whether to make Steam ID's available to maps.                                              | `true`  | SERVER_CAN_EXECUTE |
 
 ## Requirements
 
