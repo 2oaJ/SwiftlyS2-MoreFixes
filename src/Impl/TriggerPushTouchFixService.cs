@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using SwiftlyS2.Shared;
 using SwiftlyS2.Shared.Convars;
+using SwiftlyS2.Shared.Events;
 using SwiftlyS2.Shared.Memory;
 using SwiftlyS2.Shared.Natives;
 using SwiftlyS2.Shared.SchemaDefinitions;
@@ -48,6 +49,9 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
                 });
 
                 _hook = function;
+
+                core.Event.OnMapUnload += OnMapUnload;
+
                 _logger.LogInformation($"{ServiceName} installed successfully");
             }
             catch (Exception ex)
@@ -64,12 +68,12 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
                 _hook.RemoveHook(_hookId.Value);
                 _logger.LogInformation($"{ServiceName} uninstalled");
             }
+
+            core.Event.OnMapUnload -= OnMapUnload;
         }
 
         private void ProcessTriggerPushTouch(CTriggerPush pPush, CBaseEntity pOther, Func<TriggerPushTouchContext> next)
         {
-
-
             bool useOldPush = _useOldPush.Value;
             uint spawnFlags = pPush.Spawnflags;
             bool isPushOnce = (spawnFlags & 0x80) != 0;
@@ -155,6 +159,11 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
                 core.GameData.GetOffset("CBaseTrigger::PassesTriggerFilters"));
 
             return _passesTriggerFiltersObject?.Call(trigger.Address, entity.Address) ?? false;
+        }
+
+        private void OnMapUnload(IOnMapUnloadEvent @event)
+        {
+            _useOldPush.Value = _useOldPush.DefaultValue;
         }
 
         private static void VectorRotateSafe(Vector inVec, matrix3x4_t matrix, out Vector outVec)
