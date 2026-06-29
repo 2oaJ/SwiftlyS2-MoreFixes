@@ -6,27 +6,26 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes;
 
 public static partial class GameFunctions
 {
-    [LibraryImport("swiftlys2", StringMarshalling = StringMarshalling.Utf8)]
-    [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
-    private static partial nint GetPureInterface(string iface_name);
-
     private const string GAMERESOURCESERVICESERVER_INTERFACE_VERSION = "GameResourceServiceServerV001";
 
     private delegate nint CGameEntitySystem__FindEntityByName_t(nint pEntitySystem, nint pStartEntity, nint pszName, nint pSearchingEntity, nint pActivator, nint pCaller, nint pFilter);
+    private delegate nint CBaseEntity__SetGroundEntity_t(nint pEntity, nint pTargetEntity, nint pUnkEntity);
 
     private static ISwiftlyCore? _core;
     private static nint _pEntitySystem;
     private static CGameEntitySystem__FindEntityByName_t? _fnCGameEntitySystem__FindEntityByName;
+    private static CBaseEntity__SetGroundEntity_t? _fnCBaseEntity__SetGroundEntity;
 
     public static void Setup(ISwiftlyCore core)
     {
         _core = core;
         _fnCGameEntitySystem__FindEntityByName = Marshal.GetDelegateForFunctionPointer<CGameEntitySystem__FindEntityByName_t>(core.GameData.GetSignature("CGameEntitySystem_FindEntityByName"));
+        _fnCBaseEntity__SetGroundEntity = Marshal.GetDelegateForFunctionPointer<CBaseEntity__SetGroundEntity_t>(core.GameData.GetSignature("CBaseEntity::SetGroundEntity"));
 
         unsafe
         {
             var offset_GameEntitySystem = core.GameData.GetOffset("GameEntitySystem");
-            var pGameResourceServiceServer = GetPureInterface(GAMERESOURCESERVICESERVER_INTERFACE_VERSION);
+            var pGameResourceServiceServer = core.Memory.GetInterfaceByName(GAMERESOURCESERVICESERVER_INTERFACE_VERSION)!.Value;
             _pEntitySystem = *(nint*)(pGameResourceServiceServer + offset_GameEntitySystem);
         }
     }
@@ -41,5 +40,10 @@ public static partial class GameFunctions
         }
 
         return null;
+    }
+
+    public static void SetGroundEntity(this CBaseEntity ent, CBaseEntity? target)
+    {
+        _fnCBaseEntity__SetGroundEntity!(ent.Address, target?.Address ?? 0, 0);
     }
 }

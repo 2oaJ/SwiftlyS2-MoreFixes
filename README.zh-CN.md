@@ -44,8 +44,8 @@
 | **Filtering**             | Steam ID Filtering              |  ✅  |                                                                 |
 | **Network Message Fix**   | BlockParticleMsgsFix            |  ✅  | 拦截 `CUserMsg_ParticleManager` 以缓解客户端卡顿/闪退，实验性 |
 | **Physics Sim Fix**       | ShufflePlayerPhysicsSimFix      |  ✅  | 模拟 CSGO 风格的随机实体碰撞                                    |
-| **subtick service**       | subtick movement disable        |  ✅  | 需要测试                                                        |
-|                                 | subtick shooting disable        |  ✅  | 需要测试                                                        |
+| **subtick service**       | subtick movement disable        |  ✅  |                                                                 |
+|                                 | subtick shooting disable        |  ✅  |                                                                 |
 
 - KeyValueFix请使用专为SwiftlyS2移植的[CS2-CustomIO-For-SW2](https://github.com/himenekocn/CS2-CustomIO-For-SW2)
 
