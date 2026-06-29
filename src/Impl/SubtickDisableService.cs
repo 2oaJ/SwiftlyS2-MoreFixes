@@ -3,6 +3,7 @@ using SwiftlyS2.Shared;
 using SwiftlyS2.Shared.Convars;
 using SwiftlyS2.Shared.Events;
 using SwiftlyS2.Shared.ProtobufDefinitions;
+using SwiftlyS2.Shared.SchemaDefinitions;
 using ZombiEden.CS2.SwiftlyS2.Fixes.Interface;
 
 namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
@@ -23,9 +24,7 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
 
         private bool _disableMovement = false;
         private bool _disableShooting = false;
-
-        // 标记事件是否已注册
-        private bool _eventHooked = false;
+        private bool _useOldPush = false;
 
         public void Install()
         {
@@ -53,11 +52,14 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
                 _disableMovement = _disableMovementConVar.Value;
                 _disableShooting = _disableShootingConVar.Value;
 
-                // 注册ConVar值变化监听
-                core.Event.OnConVarValueChanged += OnConVarValueChanged;
+                var cvarUseOldPush = core.ConVar.Find<bool>("cs2f_use_old_push");
+                if (cvarUseOldPush != null)
+                {
+                    _useOldPush = cvarUseOldPush.Value;
+                }
 
-                // 根据初始值决定是否注册事件
-                UpdateEventHook();
+                core.Event.OnConVarValueChanged += OnConVarValueChanged;
+                core.Event.OnClientProcessUsercmds += OnClientProcessUsercmds;
 
                 _isInstalled = true;
                 logger.LogInformation($"{ServiceName} installed successfully - Subtick processing configured (Movement: {_disableMovement}, Shooting: {_disableShooting})");
@@ -78,11 +80,8 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
 
             try
             {
-                // 取消注册ConVar值变化监听
                 core.Event.OnConVarValueChanged -= OnConVarValueChanged;
-
-                // 取消注册事件hook
-                UnhookEvent();
+                core.Event.OnClientProcessUsercmds -= OnClientProcessUsercmds;
 
                 logger.LogInformation($"{ServiceName} uninstalled");
                 _isInstalled = false;
@@ -107,7 +106,6 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
                 {
                     _disableMovement = newValue;
                     logger.LogInformation($"{ServiceName}: Subtick movement disable changed to {newValue}");
-                    UpdateEventHook();
                 }
             }
             else if (_disableShootingConVar != null && convarName == _disableShootingConVar.Name)
@@ -117,125 +115,82 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
                 {
                     _disableShooting = newValue;
                     logger.LogInformation($"{ServiceName}: Subtick shooting disable changed to {newValue}");
-                    UpdateEventHook();
                 }
             }
-        }
-
-        /// <summary>
-        /// 根据ConVar值动态注册/注销事件处理器
-        /// 只要有一个功能开启就需要hook
-        /// </summary>
-        private void UpdateEventHook()
-        {
-            bool shouldHook = _disableMovement || _disableShooting;
-
-            if (shouldHook && !_eventHooked)
+            else if (convarName == "cs2f_use_old_push")
             {
-                // 需要hook但还未hook
-                core.Event.OnClientProcessUsercmds += OnClientProcessUsercmds;
-                _eventHooked = true;
-                logger.LogDebug($"{ServiceName}: OnClientProcessUsercmds hook registered");
-            }
-            else if (!shouldHook && _eventHooked)
-            {
-                // 不需要hook但已经hook
-                core.Event.OnClientProcessUsercmds -= OnClientProcessUsercmds;
-                _eventHooked = false;
-                logger.LogDebug($"{ServiceName}: OnClientProcessUsercmds hook unregistered");
-            }
-        }
-
-        /// <summary>
-        /// 取消注册事件hook
-        /// </summary>
-        private void UnhookEvent()
-        {
-            if (_eventHooked)
-            {
-                core.Event.OnClientProcessUsercmds -= OnClientProcessUsercmds;
-                _eventHooked = false;
+                _useOldPush = bool.Parse(@event.NewValue);
             }
         }
 
         /// <summary>
         /// 处理客户端Usercmds,移除Subtick输入
-        /// 使用引用传递避免拷贝，提升性能
         /// </summary>
         private void OnClientProcessUsercmds(IOnClientProcessUsercmdsEvent @event)
         {
-            try
+            if (!_disableMovement && !_disableShooting && !_useOldPush)
             {
-                // 直接使用缓存的字段值，避免频繁读取ConVar
-                // 使用for循环而非foreach，以便使用索引直接访问，避免枚举器开销
-                var usercmds = @event.Usercmds;
-                for (int i = 0; i < usercmds.Count; i++)
-                {
-                    var cmd = usercmds[i]; // 直接获取引用，不创建副本
-
-                    if (_disableMovement)
-                    {
-                        ProcessSubtickMovementRemoval(ref cmd);
-                    }
-
-                    if (_disableShooting)
-                    {
-                        ProcessSubtickShootingRemoval(ref cmd);
-                    }
-                }
+                return;
             }
-            catch (Exception ex)
+
+            var usercmds = @event.Usercmds;
+            for (int i = 0; i < usercmds.Count; i++)
             {
-                logger.LogError(ex, $"Error in {ServiceName}.OnClientProcessUsercmds");
+                var cmd = usercmds[i];
+
+                if (_disableMovement || _useOldPush)
+                {
+                    ProcessSubtickMovementRemoval(cmd);
+                }
+
+                if (_disableShooting)
+                {
+                    ProcessSubtickShootingRemoval(cmd);
+                }
             }
         }
 
         /// <summary>
         /// 移除Subtick移动输入
         /// 对应C++代码中的subtick_moves处理
-        /// 使用ref参数确保按引用传递
         /// </summary>
-        private static void ProcessSubtickMovementRemoval(ref CSGOUserCmdPB cmd)
+        private static void ProcessSubtickMovementRemoval(CSGOUserCmdPB cmd)
         {
             if (cmd.Base?.SubtickMoves == null || cmd.Base.SubtickMoves.Count == 0)
                 return;
 
             var moves = cmd.Base.SubtickMoves;
-
-            // 预分配容量以避免List动态扩容
-            var toKeep = new List<CSubtickMoveStep>(moves.Count);
-
             for (int i = 0; i < moves.Count; i++)
             {
                 var move = moves.Get(i);
-                // 移除移动按钮的subtick输入 (button >= IN_JUMP && button <= IN_MOVERIGHT && button != IN_USE)
-                // 以及移除视角变化
-                if ((move.Button >= 0x2 && move.Button <= 0x400 && move.Button != 0x20)
-                    || move.PitchDelta != 0.0f
-                    || move.YawDelta != 0.0f)
+                if (move == null)
                 {
-                    // 跳过（即移除）
                     continue;
                 }
 
-                // 保留此move
-                toKeep.Add(move);
-            }
-
-            // 只在有变化时才重建列表
-            if (toKeep.Count != moves.Count)
-            {
-                moves.Clear();
-                foreach (var move in toKeep)
+                var button = (InputBitMask_t)move.Button;
+                if (button >= InputBitMask_t.IN_DUCK && button <= InputBitMask_t.IN_MOVERIGHT && button != InputBitMask_t.IN_USE)
                 {
-                    var newMove = moves.Add();
-                    newMove.Button = move.Button;
-                    newMove.Pressed = move.Pressed;
-                    newMove.When = move.When;
-                    newMove.AnalogForwardDelta = move.AnalogForwardDelta;
-                    newMove.AnalogLeftDelta = move.AnalogLeftDelta;
-                    newMove.PitchDelta = move.PitchDelta;
-                    newMove.YawDelta = move.YawDelta;
+                    move.Button = 0;
+                    move.Pressed = false;
+                    move.When = 0;
+                    move.AnalogForwardDelta = 0f;
+                    move.AnalogLeftDelta = 0f;
+                    move.PitchDelta = 0f;
+                    move.YawDelta = 0f;
+                }
+                else
+                {
+                    // Remove subtick movement viewangles by pitch/yaw
+                    if (move.PitchDelta != 0f)
+                    {
+                        move.PitchDelta = 0f;
+                    }
+
+                    if (move.YawDelta != 0f)
+                    {
+                        move.YawDelta = 0f;
+                    }
                 }
             }
         }
@@ -243,16 +198,14 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
         /// <summary>
         /// 移除Subtick射击输入
         /// </summary>
-        private static void ProcessSubtickShootingRemoval(ref CSGOUserCmdPB cmd)
+        private static void ProcessSubtickShootingRemoval(CSGOUserCmdPB cmd)
         {
-            // 清除攻击历史索引
             if (cmd.Attack1StartHistoryIndex != -1)
                 cmd.Attack1StartHistoryIndex = -1;
 
             if (cmd.Attack2StartHistoryIndex != -1)
                 cmd.Attack2StartHistoryIndex = -1;
 
-            // 清除输入历史 (对应C++的mutable_input_history()->Clear())
             if (cmd.InputHistory?.Count > 0)
                 cmd.InputHistory.Clear();
         }

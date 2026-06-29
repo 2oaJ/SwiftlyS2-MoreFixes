@@ -44,8 +44,8 @@
 | **Filtering**             | Steam ID Filtering              |   ✅   |                                                                                  |
 | **Network Message Fix**   | BlockParticleMsgsFix            |   ✅   | Blocks `CUserMsg_ParticleManager` to mitigate client lag/crashes; experimental |
 | **Physics Sim Fix**       | ShufflePlayerPhysicsSimFix      |   ✅   | Shuffles active physics touching links to reduce player collision ordering bias  |
-| **subtick service**       | subtick movement disable        |   ✅   | Needs testing                                                                    |
-|                                 | subtick shooting disable        |   ✅   | Needs testing                                                                    |
+| **subtick service**       | subtick movement disable        |   ✅   |                                                                                  |
+|                                 | subtick shooting disable        |   ✅   |                                                                                  |
 
 For KeyValue fixes, use the SwiftlyS2-specific [CS2-CustomIO-For-SW2](https://github.com/himenekocn/CS2-CustomIO-For-SW2).
 
