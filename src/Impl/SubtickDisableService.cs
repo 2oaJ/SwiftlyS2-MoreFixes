@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using SwiftlyS2.Shared;
 using SwiftlyS2.Shared.Convars;
 using SwiftlyS2.Shared.Events;
+using SwiftlyS2.Shared.GameHooks;
 using SwiftlyS2.Shared.ProtobufDefinitions;
 using SwiftlyS2.Shared.SchemaDefinitions;
 using ZombiEden.CS2.SwiftlyS2.Fixes.Interface;
@@ -59,7 +60,8 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
                 }
 
                 core.Event.OnConVarValueChanged += OnConVarValueChanged;
-                core.Event.OnClientProcessUsercmds += OnClientProcessUsercmds;
+
+                core.GameHooks.Controller.ProcessUsercmds.Pre += OnClientProcessUsercmds;
 
                 _isInstalled = true;
                 logger.LogInformation($"{ServiceName} installed successfully - Subtick processing configured (Movement: {_disableMovement}, Shooting: {_disableShooting})");
@@ -81,7 +83,8 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
             try
             {
                 core.Event.OnConVarValueChanged -= OnConVarValueChanged;
-                core.Event.OnClientProcessUsercmds -= OnClientProcessUsercmds;
+
+                core.GameHooks.Controller.ProcessUsercmds.Pre -= OnClientProcessUsercmds;
 
                 logger.LogInformation($"{ServiceName} uninstalled");
                 _isInstalled = false;
@@ -126,26 +129,26 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
         /// <summary>
         /// 处理客户端Usercmds,移除Subtick输入
         /// </summary>
-        private void OnClientProcessUsercmds(IOnClientProcessUsercmdsEvent @event)
+        private void OnClientProcessUsercmds(ref ProcessUsercmdsPreContext ctx)
         {
             if (!_disableMovement && !_disableShooting && !_useOldPush)
             {
                 return;
             }
 
-            var usercmds = @event.Usercmds;
+            var usercmds = ctx.Params.Usercmds;
             for (int i = 0; i < usercmds.Count; i++)
             {
                 var cmd = usercmds[i];
 
                 if (_disableMovement || _useOldPush)
                 {
-                    ProcessSubtickMovementRemoval(cmd);
+                    ProcessSubtickMovementRemoval(cmd.CSGOUserCmd);
                 }
 
                 if (_disableShooting)
                 {
-                    ProcessSubtickShootingRemoval(cmd);
+                    ProcessSubtickShootingRemoval(cmd.CSGOUserCmd);
                 }
             }
         }
