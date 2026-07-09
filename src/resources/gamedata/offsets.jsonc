@@ -1,7 +1,7 @@
 {
   "CBaseTrigger::PassesTriggerFilters": {
-    "windows": 273,
-    "linux": 274
+    "windows": 269,
+    "linux": 270
   },
   "CBaseEntity::Use": {
     "windows": 145,
