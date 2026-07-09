@@ -67,7 +67,7 @@ For KeyValue fixes, use the SwiftlyS2-specific [CS2-CustomIO-For-SW2](https://gi
 
 ## Requirements
 
-- [SwiftlyS2](https://github.com/swiftly-solution/swiftlys2) `v1.3.3-beta.15` or newer
+- [SwiftlyS2](https://github.com/swiftly-solution/swiftlys2) `v1.4.2-beta.25` or newer
 
 ## Installation
 

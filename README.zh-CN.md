@@ -67,7 +67,7 @@
 
 ## 🛡️ 要求
 
-- [SwiftlyS2](https://github.com/swiftly-solution/swiftlys2) (不低于 `v1.3.3-beta.15`)
+- [SwiftlyS2](https://github.com/swiftly-solution/swiftlys2) (不低于 `v1.4.2-beta.25`)
 
 ## 🔧 安装
 
