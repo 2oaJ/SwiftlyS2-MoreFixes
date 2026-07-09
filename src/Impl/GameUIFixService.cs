@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using SwiftlyS2.Shared;
 using SwiftlyS2.Shared.Convars;
 using SwiftlyS2.Shared.Events;
+using SwiftlyS2.Shared.GameHooks;
 using SwiftlyS2.Shared.Misc;
 using SwiftlyS2.Shared.Natives;
 using SwiftlyS2.Shared.Players;
@@ -159,10 +160,12 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
                 return;
             }
 
-            core.Event.OnEntityIdentityAcceptInputHook += OnEntityIdentityAcceptInputHook;
             core.Event.OnWorldUpdate += OnWorldUpdate;
             core.Event.OnMapUnload += OnMapUnload;
             core.Event.OnClientDisconnected += OnClientDisconnected;
+
+            core.GameHooks.Entities.AcceptInput.Pre += OnEntityIdentityAcceptInputHook;
+
             _hooksAttached = true;
         }
 
@@ -173,15 +176,17 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
                 return;
             }
 
-            core.Event.OnEntityIdentityAcceptInputHook -= OnEntityIdentityAcceptInputHook;
             core.Event.OnWorldUpdate -= OnWorldUpdate;
             core.Event.OnMapUnload -= OnMapUnload;
             core.Event.OnClientDisconnected -= OnClientDisconnected;
+
+            core.GameHooks.Entities.AcceptInput.Pre -= OnEntityIdentityAcceptInputHook;
+
             _hooksAttached = false;
             _worldUpdateCounter = 0;
         }
 
-        private void OnEntityIdentityAcceptInputHook(IOnEntityIdentityAcceptInputHookEvent @event)
+        private void OnEntityIdentityAcceptInputHook(ref AcceptInputEntityPreContext ctx)
         {
             try
             {
@@ -190,25 +195,25 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
                     return;
                 }
 
-                var entityInstance = @event.EntityInstance;
+                var entityInstance = ctx.Params.EntityInstance;
                 if (!IsGameUiEntity(entityInstance))
                 {
                     return;
                 }
 
-                var inputName = @event.InputName;
+                var inputName = ctx.Params.InputName;
                 if (string.Equals(inputName, "Activate", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (TryHandleActivate(entityInstance, @event.Activator))
+                    if (TryHandleActivate(entityInstance, ctx.Params.Activator))
                     {
-                        @event.Result = HookResult.Stop;
+                        ctx.SetHookResult(HookResult.Stop);
                     }
                 }
                 else if (string.Equals(inputName, "Deactivate", StringComparison.OrdinalIgnoreCase))
                 {
                     if (TryHandleDeactivate(entityInstance))
                     {
-                        @event.Result = HookResult.Stop;
+                        ctx.SetHookResult(HookResult.Stop);
                     }
                 }
             }

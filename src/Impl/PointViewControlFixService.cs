@@ -3,6 +3,7 @@ using SwiftlyS2.Shared;
 using SwiftlyS2.Shared.Convars;
 using SwiftlyS2.Shared.Events;
 using SwiftlyS2.Shared.GameEventDefinitions;
+using SwiftlyS2.Shared.GameHooks;
 using SwiftlyS2.Shared.Misc;
 using ZombiEden.CS2.SwiftlyS2.Fixes.Impl.CustomEntity;
 using ZombiEden.CS2.SwiftlyS2.Fixes.Interface;
@@ -39,8 +40,9 @@ public class PointViewControlFixService : IPointViewControlFixService
 
             _core.Event.OnConVarValueChanged += OnConVarValueChanged;
             _core.Event.OnEntitySpawned += OnEntitySpawned;
-            _core.Event.OnEntityIdentityAcceptInputHook += OnEntityIdentityAcceptInput;
             _core.Event.OnWorldUpdate += OnWorldUpdate;
+
+            _core.GameHooks.Entities.AcceptInput.Pre += OnEntityIdentityAcceptInput;
 
             _eventRoundPrestart = _core.GameEvent.HookPost<EventRoundPrestart>(OnRoundPrestartPost);
 
@@ -59,8 +61,9 @@ public class PointViewControlFixService : IPointViewControlFixService
         {
             _core.Event.OnConVarValueChanged -= OnConVarValueChanged;
             _core.Event.OnEntitySpawned -= OnEntitySpawned;
-            _core.Event.OnEntityIdentityAcceptInputHook -= OnEntityIdentityAcceptInput;
             _core.Event.OnWorldUpdate -= OnWorldUpdate;
+
+            _core.GameHooks.Entities.AcceptInput.Pre -= OnEntityIdentityAcceptInput;
 
             _core.GameEvent.Unhook(_eventRoundPrestart);
 
@@ -104,46 +107,46 @@ public class PointViewControlFixService : IPointViewControlFixService
         CPointViewControlHandler.OnCreated(@event.Entity);
     }
 
-    private void OnEntityIdentityAcceptInput(IOnEntityIdentityAcceptInputHookEvent @event)
+    private void OnEntityIdentityAcceptInput(ref AcceptInputEntityPreContext ctx)
     {
         if (!_enabled)
         {
             return;
         }
 
-        var viewControl = CustomEntityCast.AsPointViewControl(@event.EntityInstance);
+        var viewControl = CustomEntityCast.AsPointViewControl(ctx.Params.EntityInstance);
         if (viewControl == null)
         {
             return;
         }
 
-        var inputName = @event.InputName;
+        var inputName = ctx.Params.InputName;
         if (string.Equals(inputName, "EnableCamera", StringComparison.OrdinalIgnoreCase))
         {
-            if (viewControl.OnEnable(@event.Activator))
+            if (viewControl.OnEnable(ctx.Params.Activator))
             {
-                @event.Result = HookResult.Stop;
+                ctx.SetHookResult(HookResult.Stop);
             }
         }
         else if (string.Equals(inputName, "DisableCamera", StringComparison.OrdinalIgnoreCase))
         {
-            if (viewControl.OnDisable(@event.Activator))
+            if (viewControl.OnDisable(ctx.Params.Activator))
             {
-                @event.Result = HookResult.Stop;
+                ctx.SetHookResult(HookResult.Stop);
             }
         }
         else if (string.Equals(inputName, "EnableCameraAll", StringComparison.OrdinalIgnoreCase))
         {
             if (viewControl.OnEnableAll())
             {
-                @event.Result = HookResult.Stop;
+                ctx.SetHookResult(HookResult.Stop);
             }
         }
         else if (string.Equals(inputName, "DisableCameraAll", StringComparison.OrdinalIgnoreCase))
         {
             if (viewControl.OnDisableAll())
             {
-                @event.Result = HookResult.Stop;
+                ctx.SetHookResult(HookResult.Stop);
             }
         }
     }
