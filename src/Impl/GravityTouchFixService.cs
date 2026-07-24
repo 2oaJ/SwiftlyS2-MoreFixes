@@ -5,6 +5,8 @@ using SwiftlyS2.Shared.Misc;
 using SwiftlyS2.Shared.SchemaDefinitions;
 using System.Collections.Concurrent;
 using ZombiEden.CS2.SwiftlyS2.Fixes.Interface;
+using static ZombiEden.CS2.SwiftlyS2.Fixes.Extensions;
+using static ZombiEden.CS2.SwiftlyS2.Fixes.Sdk.GameTypes;
 
 namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
 {
@@ -17,7 +19,7 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
         ILogger<IGravityTouchFixService> logger) : IGravityTouchFixService
     {
         private delegate void CTriggerGravity_GravityTouchDelegate(nint pEntity, nint pOther);
-        private delegate void CTriggerGravity_PrecacheDelegate(nint pEntity, nint pContext);
+        private unsafe delegate void CTriggerGravity_PrecacheDelegate(nint pEntity, CEntityPrecacheContext* pContext);
         private delegate void CTriggerGravity_EndTouchDelegate(nint pEntity, nint pOther);
         private delegate void CBaseEntity_SetGravityScaleDelegate(nint pEntity, float flGravityScale);
 
@@ -131,7 +133,7 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
             logger.LogDebug("GravityTouch hook installed");
         }
 
-        private void InstallPrecacheHook()
+        private unsafe void InstallPrecacheHook()
         {
             try
             {
@@ -162,10 +164,10 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
 
                 _precacheHookId = _precacheHook.AddHook(original =>
                 {
-                    return (nint pEntity, nint pKeyValues) =>
+                    return (pEntity, pContext) =>
                     {
-                        original()(pEntity, pKeyValues);
-                        OnPrecache(pEntity, pKeyValues);
+                        original()(pEntity, pContext);
+                        OnPrecache(pContext->m_pKeyValues);
                     };
                 });
 
@@ -230,34 +232,23 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
         /// <summary>
         /// Hook_CTriggerGravityPrecache
         /// </summary>
-        private void OnPrecache(nint pEntity, nint pContext)
+        private void OnPrecache(nint pEntityKV)
         {
-            try
+            var hammerUniqueId = NativeCEntityKeyValues__GetString(pEntityKV, "hammerUniqueId");
+            if (string.IsNullOrEmpty(hammerUniqueId))
             {
-
-                var entity = core.Memory.ToSchemaClass<CBaseEntity>(pEntity);
-                core.Scheduler.NextWorldUpdate(() =>
-                {
-                    if (entity == null || !entity.IsValid)
-                        return;
-
-                    var entityId = GetEntityUnique(entity);
-                    if (entityId == ENTITY_UNIQUE_INVALID)
-                        return;
-
-                    float gravity = entity.GravityScale;
-
-                    if (gravity != 0 && gravity != DEFAULT_GRAVITY_SCALE)
-                    {
-                        _gravityMap[entityId] = gravity;
-                        logger.LogInformation($"Precache: Registered gravity {gravity} for entity {entity.UniqueHammerID} (hash: 0x{entityId:X})");
-                    }
-                });
+                return;
             }
-            catch (Exception ex)
+
+            var classname = NativeCEntityKeyValues__GetString(pEntityKV, "classname");
+            if (string.IsNullOrEmpty(classname) || !classname.Equals("trigger_gravity"))
             {
-                logger.LogError($"Error in OnPrecache: {ex.Message}");
+                return;
             }
+
+            var hEntity = MurmurHash2.HashStringLowercase(hammerUniqueId, ENTITY_MURMURHASH_SEED);
+            var flGravity = NativeCEntityKeyValues__GetFloat(pEntityKV, "gravity");
+            _gravityMap[hEntity] = flGravity;
         }
 
         /// <summary>

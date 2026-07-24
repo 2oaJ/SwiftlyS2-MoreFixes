@@ -36,7 +36,6 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes
             // 注册其他修复服务
             AddFixService<IStripFixService, StripFixService>(services, fixServiceFactories);
             AddFixService<ITriggerPushTouchFixService, TriggerPushTouchFixService>(services, fixServiceFactories);
-            AddFixService<ITriggerForPlayerFixService, TriggerForPlayerFixService>(services, fixServiceFactories);
             AddFixService<IGravityTouchFixService, GravityTouchFixService>(services, fixServiceFactories);
             AddFixService<ISubtickDisableService, SubtickDisableService>(services, fixServiceFactories);
             AddFixService<IGameUIFixService, GameUIFixService>(services, fixServiceFactories);

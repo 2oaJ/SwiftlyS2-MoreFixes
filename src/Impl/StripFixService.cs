@@ -1,192 +1,353 @@
 ﻿using Microsoft.Extensions.Logging;
 using SwiftlyS2.Shared;
 using SwiftlyS2.Shared.Memory;
+using SwiftlyS2.Shared.Misc;
 using SwiftlyS2.Shared.SchemaDefinitions;
-using System.Runtime.InteropServices;
 using ZombiEden.CS2.SwiftlyS2.Fixes.Interface;
+using ZombiEden.CS2.SwiftlyS2.Fixes.Sdk;
+using static ZombiEden.CS2.SwiftlyS2.Fixes.Extensions;
+using static ZombiEden.CS2.SwiftlyS2.Fixes.Sdk.GameTypes;
 
-namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
+namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl;
+
+/// <summary>
+/// 武器剥离修复实现
+/// </summary>
+public class StripFixService : IStripFixService
 {
-    /// <summary>
-    /// 武器剥离修复实现
-    /// </summary>
-    public class StripFixService(ISwiftlyCore core, ILogger<IStripFixService> logger) : IStripFixService
+    public string ServiceName => "StripFix";
+
+    private readonly ISwiftlyCore _core;
+    private readonly ILogger _logger;
+
+    private unsafe delegate void CGamePlayerEquip__Precache_t(nint self, CEntityPrecacheContext* pContext);
+    private IUnmanagedFunction<CGamePlayerEquip__Precache_t>? _hook1;
+    private Guid _hook1Id;
+
+    private unsafe delegate void CGamePlayerEquip__Use_t(nint self, InputData_t* inputData);
+    private IUnmanagedFunction<CGamePlayerEquip__Use_t>? _hook2;
+    private Guid _hook2Id;
+
+    private unsafe delegate void CGamePlayerEquip__InputTriggerForAllPlayers_t(nint pEntity, InputData_t* pInput);
+    private IUnmanagedFunction<CGamePlayerEquip__InputTriggerForAllPlayers_t>? _hook3;
+    private Guid _hook3Id;
+
+    private unsafe delegate void CGamePlayerEquip__InputTriggerForActivatedPlayer_t(nint pEntity, InputData_t* pInput);
+    private IUnmanagedFunction<CGamePlayerEquip__InputTriggerForActivatedPlayer_t>? _hook4;
+    private Guid _hook4Id;
+
+    private readonly Dictionary<uint, HashSet<gear_slot_t>> _playerEquipDict = [];
+    private const int MAX_EQUIPMENTS_SIZE = 32;
+
+    private const uint ENTITY_MURMURHASH_SEED = 0x97984357;
+    private const uint ENTITY_UNIQUE_INVALID = ~0U;
+
+    public StripFixService(ISwiftlyCore core, ILogger<StripFixService> logger)
     {
-        private delegate void CGamePlayerEquipUseDelegate(nint self, nint inputData);
+        _core = core;
+        _logger = logger;
+    }
 
-        public string ServiceName => "StripFix";
-
-        private readonly ILogger<IStripFixService> _logger = logger;
-
-        private Guid? _hookId;
-        private IUnmanagedFunction<CGamePlayerEquipUseDelegate>? _hook;
-
-        private const int SF_PLAYEREQUIP_STRIPFIRST = 0x0002;
-        private const int SF_PLAYEREQUIP_ONLYSTRIPSAME = 0x0004;
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct InputData_t
+    public void Install()
+    {
+        try
         {
-            public nint pActivator;
-            public nint pCaller;
-            public nint value;
-            public int nOutputID;
+            HookCGamePlayerEquipPrecache();
+            HookCGamePlayerEquipUse();
+
+            _logger.LogInformation($"{ServiceName} installed successfully");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Failed to install {ServiceName}: {ex.Message}");
+            throw;
+        }
+    }
+
+    public void Uninstall()
+    {
+        _hook1?.RemoveHook(_hook1Id);
+        _hook2?.RemoveHook(_hook2Id);
+        _hook3?.RemoveHook(_hook3Id);
+        _hook4?.RemoveHook(_hook4Id);
+
+        _playerEquipDict.Clear();
+
+        _logger.LogInformation($"{ServiceName} uninstalled");
+    }
+
+    private unsafe void HookCGamePlayerEquipPrecache()
+    {
+        var pCGamePlayerEquipVTable = _core.Memory.GetVTableAddress("server", "CGamePlayerEquip");
+        if (!pCGamePlayerEquipVTable.HasValue)
+        {
+            _logger.LogError("Failed to find CGamePlayerEquip vtable");
+            return;
         }
 
-        public void Install()
+        int offset = _core.GameData.GetOffset("CBaseEntity::Precache");
+        if (offset == -1)
         {
-            try
+            _logger.LogError("Failed to find CBaseEntity::Precache offset");
+            return;
+        }
+
+        _hook1 = _core.Memory.GetUnmanagedFunctionByVTable<CGamePlayerEquip__Precache_t>(pCGamePlayerEquipVTable.Value, offset);
+        _hook1Id = _hook1.AddHook(original => (self, pContext) =>
+        {
+            original()(self, pContext);
+            CGamePlayerEquip_OnPrecache(pContext->m_pKeyValues);
+        });
+    }
+
+    private unsafe void HookCGamePlayerEquipUse()
+    {
+        var pCGamePlayerEquipVTable = _core.Memory.GetVTableAddress("server", "CGamePlayerEquip");
+        if (!pCGamePlayerEquipVTable.HasValue)
+        {
+            _logger.LogError("Failed to find CGamePlayerEquip vtable");
+            return;
+        }
+
+        int offset = _core.GameData.GetOffset("CBaseEntity::Use");
+        if (offset == -1)
+        {
+            _logger.LogError("Failed to find CBaseEntity::Use offset");
+            return;
+        }
+
+        _hook2 = _core.Memory.GetUnmanagedFunctionByVTable<CGamePlayerEquip__Use_t>(pCGamePlayerEquipVTable.Value, offset);
+        _hook2Id = _hook2.AddHook(original => (self, pInput) =>
+        {
+            var equipEntity = _core.Memory.ToSchemaClass<CGamePlayerEquip>(self);
+            CGamePlayerEquip_OnUse(equipEntity, pInput);
+            original()(self, pInput);
+        });
+    }
+
+    private unsafe void InstallTriggerForAllPlayersHook()
+    {
+        var sig = _core.GameData.GetSignature("CGamePlayerEquip::InputTriggerForAllPlayers");
+        _hook3 = _core.Memory.GetUnmanagedFunctionByAddress<CGamePlayerEquip__InputTriggerForAllPlayers_t>(sig);
+
+        if (_hook3 == null)
+        {
+            _logger.LogError("Failed to create unmanaged function for InputTriggerForAllPlayers");
+            return;
+        }
+
+        _hook3Id = _hook3.AddHook(original =>
+        {
+            return (pEntity, pInput) =>
             {
-                var pCGamePlayerEquipVTable = core.Memory.GetVTableAddress("server", "CGamePlayerEquip");
+                var equipEntity = _core.Memory.ToSchemaClass<CGamePlayerEquip>(pEntity);
+                TriggerForAllPlayers(equipEntity, pInput);
+                original()(pEntity, pInput);
+            };
+        });
+    }
 
-                if (!pCGamePlayerEquipVTable.HasValue)
+    private unsafe void InstallTriggerForActivatedPlayerHook()
+    {
+        var sig = _core.GameData.GetSignature("CGamePlayerEquip::InputTriggerForActivatedPlayer");
+        _hook4 = _core.Memory.GetUnmanagedFunctionByAddress<CGamePlayerEquip__InputTriggerForActivatedPlayer_t>(sig);
+
+        if (_hook4 == null)
+        {
+            _logger.LogError("Failed to create unmanaged function for InputTriggerForActivatedPlayer");
+            return;
+        }
+
+        _hook4Id = _hook4.AddHook(original =>
+        {
+            return (pEntity, pInput) =>
+            {
+                var equipEntity = _core.Memory.ToSchemaClass<CGamePlayerEquip>(pEntity);
+                bool shouldCallOriginal = TriggerForActivatedPlayer(equipEntity, pInput);
+                if (shouldCallOriginal)
                 {
-                    _logger.LogError("Failed to find CGamePlayerEquip vtable");
-                    return;
+                    original()(pEntity, pInput);
                 }
+            };
+        });
+    }
 
-                int useOffset = core.GameData.GetOffset("CBaseEntity::Use");
-                if (useOffset == -1)
-                {
-                    _logger.LogError("Failed to find CBaseEntity::Use offset");
-                    return;
-                }
+    private void CGamePlayerEquip_OnPrecache(nint pEntityKV)
+    {
+        var hammerUniqueId = NativeCEntityKeyValues__GetString(pEntityKV, "hammerUniqueId");
+        if (string.IsNullOrEmpty(hammerUniqueId))
+        {
+            return;
+        }
 
-                _hook = core.Memory.GetUnmanagedFunctionByVTable<CGamePlayerEquipUseDelegate>(
-                    pCGamePlayerEquipVTable.Value,
-                    useOffset);
-
-                if (_hook == null)
-                {
-                    _logger.LogError("Failed to create unmanaged function");
-                    return;
-                }
-
-                _hookId = _hook.AddHook(original => (nint self, nint inputDataPtr) =>
-                {
-                    OnCGamePlayerEquipUse(original, self, inputDataPtr);
-                });
-
-                _logger.LogInformation($"{ServiceName} installed successfully");
+        var weapons = new HashSet<gear_slot_t>();
+        for (int i = 0; i < MAX_EQUIPMENTS_SIZE; i++)
+        {
+            var val = NativeCEntityKeyValues__GetString(pEntityKV, $"weapon{i}");
+            if (string.IsNullOrEmpty(val))
+            {
+                continue;
             }
-            catch (Exception ex)
+
+            if (ItemHelper.WeaponGearSlotDict.TryGetValue(val, out var slot))
             {
-                _logger.LogError($"Failed to install {ServiceName}: {ex.Message}");
-                throw;
+                weapons.Add(slot);
             }
         }
 
-        public void Uninstall()
+        if (weapons.Count > 0)
         {
-            if (_hookId.HasValue && _hook != null)
+            var hEntity = MurmurHash2.HashStringLowercase(hammerUniqueId, ENTITY_MURMURHASH_SEED);
+            _playerEquipDict[hEntity] = weapons;
+        }
+    }
+
+    private unsafe void CGamePlayerEquip_OnUse(CGamePlayerEquip entity, InputData_t* pInput)
+    {
+        var caller = _core.EntitySystem.GetEntityByAddress(pInput->pActivator);
+        if (caller is not CCSPlayerPawn pawn)
+        {
+            return;
+        }
+
+        uint flags = entity.Spawnflags;
+        if ((flags & SF_PLAYEREQUIP_STRIPFIRST) != 0)
+        {
+            StripPlayerWeapons(pawn);
+        }
+        else if ((flags & SF_PLAYEREQUIP_ONLYSTRIPSAME) != 0)
+        {
+            StripPlayerSameWeapons(pawn, entity);
+        }
+    }
+
+    private unsafe void TriggerForAllPlayers(CGamePlayerEquip entity, InputData_t* pInput)
+    {
+        uint flags = entity.Spawnflags;
+        if ((flags & SF_PLAYEREQUIP_STRIPFIRST) != 0)
+        {
+            var players = _core.PlayerManager.GetAllValidPlayers();
+            foreach (var player in players)
             {
-                _hook.RemoveHook(_hookId.Value);
-                _logger.LogInformation($"{ServiceName} uninstalled");
+                var pawn = player.PlayerPawn;
+                if (pawn.Valid() && pawn.IsPlayerAlive())
+                {
+                    StripPlayerWeapons(pawn);
+                }
+            }
+        }
+        else if ((flags & SF_PLAYEREQUIP_ONLYSTRIPSAME) != 0)
+        {
+            var players = _core.PlayerManager.GetAllValidPlayers();
+            foreach (var player in players)
+            {
+                var pawn = player.PlayerPawn;
+                if (pawn.Valid() && pawn.IsPlayerAlive())
+                {
+                    StripPlayerSameWeapons(pawn, entity);
+                }
+            }
+        }
+    }
+
+    private unsafe bool TriggerForActivatedPlayer(CGamePlayerEquip entity, InputData_t* pInput)
+    {
+        var caller = _core.EntitySystem.GetEntityByAddress(pInput->pActivator);
+        if (caller is not CCSPlayerPawn pawn)
+        {
+            return true;
+        }
+
+        uint flags = entity.Spawnflags;
+        if ((flags & SF_PLAYEREQUIP_STRIPFIRST) != 0)
+        {
+            StripPlayerWeapons(pawn);
+        }
+        else if ((flags & SF_PLAYEREQUIP_ONLYSTRIPSAME) != 0)
+        {
+            StripPlayerSameWeapons(pawn, entity);
+        }
+
+        var itemServices = pawn.ItemServices;
+        if (itemServices == null)
+        {
+            return true;
+        }
+
+        if (pInput->value.TryGetString(out var weaponName) && !string.IsNullOrEmpty(weaponName) && weaponName != "(null)")
+        {
+            itemServices.GiveItem(weaponName);
+            return false;
+        }
+
+        return true;
+    }
+
+    public bool StripPlayerSameWeapons(CCSPlayerPawn pawn, CGamePlayerEquip equipEntity)
+    {
+        var entityId = GetEntityUnique(equipEntity);
+        if (_playerEquipDict.TryGetValue(entityId, out var stripSet) && stripSet.Count > 0)
+        {
+            return StripPlayerWeapons(pawn, stripSet);
+        }
+
+        return false;
+    }
+
+    public bool StripPlayerWeapons(CCSPlayerPawn pawn)
+    {
+        var itemServices = pawn.ItemServices;
+        if (itemServices == null)
+        {
+            return false;
+        }
+
+        itemServices.RemoveItems();
+        return true;
+    }
+
+    public bool StripPlayerWeapons(CCSPlayerPawn pawn, HashSet<gear_slot_t> stripSet)
+    {
+        var weaponService = pawn.WeaponServices;
+        if (weaponService == null)
+        {
+            return false;
+        }
+
+        var removeWeapons = new List<CBasePlayerWeapon>();
+
+        foreach (var hWeapon in weaponService.MyWeapons)
+        {
+            var weapon = hWeapon.Value?.As<CCSWeaponBase>();
+            if (weapon == null)
+            {
+                continue;
+            }
+
+            var slot = weapon.WeaponBaseVData.GearSlot;
+            if (stripSet.Contains(slot))
+            {
+                removeWeapons.Add(weapon);
             }
         }
 
-        private void OnCGamePlayerEquipUse(Func<CGamePlayerEquipUseDelegate> original, nint self, nint inputDataPtr)
+        foreach (var item in removeWeapons)
         {
-            try
-            {
-                var equipEntity = core.Memory.ToSchemaClass<CGamePlayerEquip>(self);
-                var inputData = Marshal.PtrToStructure<InputData_t>(inputDataPtr);
-                var activator = core.Memory.ToSchemaClass<CBaseEntity>(inputData.pActivator);
-                uint flags = equipEntity.Spawnflags;
-
-                bool hasStripFlag = (flags & SF_PLAYEREQUIP_STRIPFIRST) != 0;
-                bool hasOnlyStripFlag = (flags & SF_PLAYEREQUIP_ONLYSTRIPSAME) != 0;
-
-                if ((hasStripFlag || hasOnlyStripFlag) &&
-                    (activator != null && activator.IsValid &&
-                    activator.DesignerName == "player"))
-                {
-                    var pawn = activator.As<CCSPlayerPawn>();
-                    if (pawn is not null && pawn.IsValid && hasStripFlag)
-                    {
-                        StripPlayerWeapons(pawn);
-                    }
-                }
-
-                original()(self, inputDataPtr);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error in OnCGamePlayerEquipUse: {ex.Message}");
-                original()(self, inputDataPtr);
-            }
+            weaponService.DropWeapon(item);
+            item.Despawn();
         }
 
-        public bool StripPlayerWeapons(CCSPlayerPawn pawn)
+        return true;
+    }
+
+    private uint GetEntityUnique(CGamePlayerEquip entity)
+    {
+        string uniqueHammerID = entity.UniqueHammerID;
+        if (string.IsNullOrEmpty(uniqueHammerID))
         {
-            try
-            {
-                if (pawn == null || !pawn.Valid())
-                {
-                    _logger.LogWarning("Attempted to strip weapons from null or invalid pawn");
-                    return false;
-                }
-
-
-                var itemServices = pawn.ItemServices;
-                if (itemServices != null)
-                {
-                    itemServices.RemoveItems();
-                    return true;
-                }
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error in StripPlayerWeapons: {ex.Message}");
-                return false;
-            }
+            return ENTITY_UNIQUE_INVALID;
         }
 
-        public bool StripPlayerWeapons(CCSPlayerPawn pawn, HashSet<uint> stripSet)
-        {
-            try
-            {
-                if (pawn == null || !pawn.Valid())
-                {
-                    _logger.LogWarning("Attempted to strip weapons from null or invalid pawn");
-                    return false;
-                }
-
-                var weaponService = pawn.WeaponServices;
-                var removeWeapons = new List<CBasePlayerWeapon>();
-
-                if (weaponService != null)
-                {
-                    foreach (var weapon in weaponService.MyValidWeapons)
-                    {
-                        if (weapon is { IsValid: true })
-                        {
-                            var slot = (uint)weapon.PlayerWeaponVData.Slot;
-                            if (stripSet.Contains(slot))
-                            {
-                                removeWeapons.Add(weapon);
-                            }
-                        }
-                    }
-
-                    foreach (var item in removeWeapons)
-                    {
-                        weaponService.DropWeapon(item);
-                        item.DispatchSpawn();
-                    }
-
-                    return true;
-                }
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error in StripPlayerWeapons: {ex.Message}");
-                return false;
-            }
-        }
+        return MurmurHash2.HashStringLowercase(uniqueHammerID, ENTITY_MURMURHASH_SEED);
     }
 }
