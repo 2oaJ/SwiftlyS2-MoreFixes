@@ -7,6 +7,8 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Interface
     /// </summary>
     public interface IStripFixService : IGameFixService
     {
+        bool StripPlayerSameWeapons(CCSPlayerPawn pawn, CGamePlayerEquip equipEntity);
+
         /// <summary>
         /// 剥离玩家所有武器
         /// </summary>
@@ -15,6 +17,6 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Interface
         /// <summary>
         /// 剥离玩家特定槽位武器
         /// </summary>
-        bool StripPlayerWeapons(CCSPlayerPawn pawn, HashSet<uint> stripSet);
+        bool StripPlayerWeapons(CCSPlayerPawn pawn, HashSet<gear_slot_t> stripSet);
     }
 }
