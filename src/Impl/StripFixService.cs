@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using SwiftlyS2.Shared;
+using SwiftlyS2.Shared.Events;
 using SwiftlyS2.Shared.Memory;
 using SwiftlyS2.Shared.Misc;
 using SwiftlyS2.Shared.SchemaDefinitions;
@@ -52,8 +53,12 @@ public class StripFixService : IStripFixService
     {
         try
         {
-            HookCGamePlayerEquipPrecache();
-            HookCGamePlayerEquipUse();
+            Hook_CGamePlayerEquip_Precache();
+            Hook_CGamePlayerEquip_Use();
+            Hook_CGamePlayerEquip_InputTriggerForAllPlayers();
+            Hook_CGamePlayerEquip_InputTriggerForActivatedPlayer();
+
+            _core.Event.OnMapLoad += OnMapLoad;
 
             _logger.LogInformation($"{ServiceName} installed successfully");
         }
@@ -71,25 +76,30 @@ public class StripFixService : IStripFixService
         _hook3?.RemoveHook(_hook3Id);
         _hook4?.RemoveHook(_hook4Id);
 
+        _core.Event.OnMapLoad -= OnMapLoad;
+
         _playerEquipDict.Clear();
 
         _logger.LogInformation($"{ServiceName} uninstalled");
     }
 
-    private unsafe void HookCGamePlayerEquipPrecache()
+    private void OnMapLoad(IOnMapLoadEvent @event)
+    {
+        _playerEquipDict.Clear();
+    }
+
+    private unsafe void Hook_CGamePlayerEquip_Precache()
     {
         var pCGamePlayerEquipVTable = _core.Memory.GetVTableAddress("server", "CGamePlayerEquip");
         if (!pCGamePlayerEquipVTable.HasValue)
         {
-            _logger.LogError("Failed to find CGamePlayerEquip vtable");
-            return;
+            throw new Exception("Failed to find CGamePlayerEquip vtable");
         }
 
         int offset = _core.GameData.GetOffset("CBaseEntity::Precache");
         if (offset == -1)
         {
-            _logger.LogError("Failed to find CBaseEntity::Precache offset");
-            return;
+            throw new Exception("Failed to find CBaseEntity::Precache offset");
         }
 
         _hook1 = _core.Memory.GetUnmanagedFunctionByVTable<CGamePlayerEquip__Precache_t>(pCGamePlayerEquipVTable.Value, offset);
@@ -100,20 +110,18 @@ public class StripFixService : IStripFixService
         });
     }
 
-    private unsafe void HookCGamePlayerEquipUse()
+    private unsafe void Hook_CGamePlayerEquip_Use()
     {
         var pCGamePlayerEquipVTable = _core.Memory.GetVTableAddress("server", "CGamePlayerEquip");
         if (!pCGamePlayerEquipVTable.HasValue)
         {
-            _logger.LogError("Failed to find CGamePlayerEquip vtable");
-            return;
+            throw new Exception("Failed to find CGamePlayerEquip vtable");
         }
 
         int offset = _core.GameData.GetOffset("CBaseEntity::Use");
         if (offset == -1)
         {
-            _logger.LogError("Failed to find CBaseEntity::Use offset");
-            return;
+            throw new Exception("Failed to find CBaseEntity::Use offset");
         }
 
         _hook2 = _core.Memory.GetUnmanagedFunctionByVTable<CGamePlayerEquip__Use_t>(pCGamePlayerEquipVTable.Value, offset);
@@ -125,15 +133,14 @@ public class StripFixService : IStripFixService
         });
     }
 
-    private unsafe void InstallTriggerForAllPlayersHook()
+    private unsafe void Hook_CGamePlayerEquip_InputTriggerForAllPlayers()
     {
         var sig = _core.GameData.GetSignature("CGamePlayerEquip::InputTriggerForAllPlayers");
         _hook3 = _core.Memory.GetUnmanagedFunctionByAddress<CGamePlayerEquip__InputTriggerForAllPlayers_t>(sig);
 
         if (_hook3 == null)
         {
-            _logger.LogError("Failed to create unmanaged function for InputTriggerForAllPlayers");
-            return;
+            throw new Exception("Failed to create unmanaged function for InputTriggerForAllPlayers");
         }
 
         _hook3Id = _hook3.AddHook(original =>
@@ -141,21 +148,20 @@ public class StripFixService : IStripFixService
             return (pEntity, pInput) =>
             {
                 var equipEntity = _core.Memory.ToSchemaClass<CGamePlayerEquip>(pEntity);
-                TriggerForAllPlayers(equipEntity, pInput);
+                CGamePlayerEquip_OnInputTriggerForAllPlayers(equipEntity, pInput);
                 original()(pEntity, pInput);
             };
         });
     }
 
-    private unsafe void InstallTriggerForActivatedPlayerHook()
+    private unsafe void Hook_CGamePlayerEquip_InputTriggerForActivatedPlayer()
     {
         var sig = _core.GameData.GetSignature("CGamePlayerEquip::InputTriggerForActivatedPlayer");
         _hook4 = _core.Memory.GetUnmanagedFunctionByAddress<CGamePlayerEquip__InputTriggerForActivatedPlayer_t>(sig);
 
         if (_hook4 == null)
         {
-            _logger.LogError("Failed to create unmanaged function for InputTriggerForActivatedPlayer");
-            return;
+            throw new Exception("Failed to create unmanaged function for InputTriggerForActivatedPlayer");
         }
 
         _hook4Id = _hook4.AddHook(original =>
@@ -163,7 +169,7 @@ public class StripFixService : IStripFixService
             return (pEntity, pInput) =>
             {
                 var equipEntity = _core.Memory.ToSchemaClass<CGamePlayerEquip>(pEntity);
-                bool shouldCallOriginal = TriggerForActivatedPlayer(equipEntity, pInput);
+                bool shouldCallOriginal = CGamePlayerEquip_OnInputTriggerForActivatedPlayer(equipEntity, pInput);
                 if (shouldCallOriginal)
                 {
                     original()(pEntity, pInput);
@@ -221,7 +227,7 @@ public class StripFixService : IStripFixService
         }
     }
 
-    private unsafe void TriggerForAllPlayers(CGamePlayerEquip entity, InputData_t* pInput)
+    private unsafe void CGamePlayerEquip_OnInputTriggerForAllPlayers(CGamePlayerEquip entity, InputData_t* pInput)
     {
         uint flags = entity.Spawnflags;
         if ((flags & SF_PLAYEREQUIP_STRIPFIRST) != 0)
@@ -250,7 +256,7 @@ public class StripFixService : IStripFixService
         }
     }
 
-    private unsafe bool TriggerForActivatedPlayer(CGamePlayerEquip entity, InputData_t* pInput)
+    private unsafe bool CGamePlayerEquip_OnInputTriggerForActivatedPlayer(CGamePlayerEquip entity, InputData_t* pInput)
     {
         var caller = _core.EntitySystem.GetEntityByAddress(pInput->pActivator);
         if (caller is not CCSPlayerPawn pawn)
