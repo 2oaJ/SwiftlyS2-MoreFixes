@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using SwiftlyS2.Shared;
+using SwiftlyS2.Shared.Events;
 using SwiftlyS2.Shared.Memory;
 using SwiftlyS2.Shared.Misc;
 using SwiftlyS2.Shared.SchemaDefinitions;
@@ -48,12 +49,11 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
             try
             {
                 InitializeSetGravityScaleFunction();
-
                 InstallGravityTouchHook();
-
                 InstallPrecacheHook();
-
                 InstallEndTouchHook();
+
+                core.Event.OnMapLoad += OnMapLoad;
 
                 logger.LogInformation($"{ServiceName} installed successfully");
             }
@@ -80,6 +80,8 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
             {
                 _endTouchHook.RemoveHook(_endTouchHookId.Value);
             }
+
+            core.Event.OnMapLoad -= OnMapLoad;
 
             _gravityMap.Clear();
 
@@ -228,6 +230,11 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
         #endregion
 
         #region Hook Callbacks
+
+        private void OnMapLoad(IOnMapLoadEvent @event)
+        {
+            _gravityMap.Clear();
+        }
 
         /// <summary>
         /// Hook_CTriggerGravityPrecache
