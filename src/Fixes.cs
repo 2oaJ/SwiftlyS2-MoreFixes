@@ -11,7 +11,7 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes
         Id = "ZombiEden.CS2.SwiftlyS2.Fixes",
         Name = "ZombiEden Fixes",
         Author = "ZombiEden",
-        Version = "1.1.5",
+        Version = "1.1.6",
         Description = "僵尸乐园 Fixes",
         Website = "https://zombieden.cn"
     )]
@@ -44,6 +44,7 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes
             AddFixService<IShufflePlayerPhysicsSimFixService, ShufflePlayerPhysicsSimFixService>(services, fixServiceFactories);
             AddFixService<IPointViewControlFixService, PointViewControlFixService>(services, fixServiceFactories);
             AddFixService<ISteamIDFilterFixService, SteamIDFilterFixService>(services, fixServiceFactories);
+            AddFixService<IBeamFixService, BeamFixService>(services, fixServiceFactories);
 
             var serviceProvider = services.BuildServiceProvider();
 
