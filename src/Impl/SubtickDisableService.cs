@@ -25,7 +25,7 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
 
         private bool _disableMovement = false;
         private bool _disableShooting = false;
-        private bool _useOldPush = false;
+        private bool _hookAttached = false;
 
         public void Install()
         {
@@ -53,18 +53,16 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
                 _disableMovement = _disableMovementConVar.Value;
                 _disableShooting = _disableShootingConVar.Value;
 
-                var cvarUseOldPush = core.ConVar.Find<bool>("cs2f_use_old_push");
-                if (cvarUseOldPush != null)
-                {
-                    _useOldPush = cvarUseOldPush.Value;
-                }
-
                 core.Event.OnConVarValueChanged += OnConVarValueChanged;
 
-                core.GameHooks.Controller.ProcessUsercmds.Pre += OnClientProcessUsercmds;
+                // 两个 convar 任一开启才挂载 hook，默认保持 ProcessUsercmds 热路径零开销
+                if (_disableMovement || _disableShooting)
+                {
+                    AttachHook();
+                }
 
                 _isInstalled = true;
-                logger.LogInformation($"{ServiceName} installed successfully - Subtick processing configured (Movement: {_disableMovement}, Shooting: {_disableShooting})");
+                logger.LogInformation($"{ServiceName} installed successfully - Subtick processing configured (Movement: {_disableMovement}, Shooting: {_disableShooting}, Hook: {_hookAttached})");
             }
             catch (Exception ex)
             {
@@ -82,9 +80,9 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
 
             try
             {
-                core.Event.OnConVarValueChanged -= OnConVarValueChanged;
+                DetachHook();
 
-                core.GameHooks.Controller.ProcessUsercmds.Pre -= OnClientProcessUsercmds;
+                core.Event.OnConVarValueChanged -= OnConVarValueChanged;
 
                 logger.LogInformation($"{ServiceName} uninstalled");
                 _isInstalled = false;
@@ -93,6 +91,36 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
             {
                 logger.LogError(ex, $"Failed to uninstall {ServiceName}: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// 挂载 ProcessUsercmds hook（幂等）
+        /// </summary>
+        private void AttachHook()
+        {
+            if (_hookAttached)
+            {
+                return;
+            }
+
+            core.GameHooks.Controller.ProcessUsercmds.Pre += OnClientProcessUsercmds;
+            _hookAttached = true;
+            logger.LogInformation($"{ServiceName}: ProcessUsercmds hook attached");
+        }
+
+        /// <summary>
+        /// 摘除 ProcessUsercmds hook（幂等）
+        /// </summary>
+        private void DetachHook()
+        {
+            if (!_hookAttached)
+            {
+                return;
+            }
+
+            core.GameHooks.Controller.ProcessUsercmds.Pre -= OnClientProcessUsercmds;
+            _hookAttached = false;
+            logger.LogInformation($"{ServiceName}: ProcessUsercmds hook detached");
         }
 
         /// <summary>
@@ -120,9 +148,14 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
                     logger.LogInformation($"{ServiceName}: Subtick shooting disable changed to {newValue}");
                 }
             }
-            else if (convarName == "cs2f_use_old_push")
+            // 任一 convar 开启才保持 hook 挂载，全关则摘除
+            if (_disableMovement || _disableShooting)
             {
-                _useOldPush = bool.Parse(@event.NewValue);
+                AttachHook();
+            }
+            else
+            {
+                DetachHook();
             }
         }
 
@@ -131,7 +164,7 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
         /// </summary>
         private void OnClientProcessUsercmds(ref ProcessUsercmdsPreContext ctx)
         {
-            if (!_disableMovement && !_disableShooting && !_useOldPush)
+            if (!_disableMovement && !_disableShooting)
             {
                 return;
             }
@@ -141,7 +174,7 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
             {
                 var cmd = usercmds[i];
 
-                if (_disableMovement || _useOldPush)
+                if (_disableMovement)
                 {
                     ProcessSubtickMovementRemoval(cmd.CSGOUserCmd);
                 }
