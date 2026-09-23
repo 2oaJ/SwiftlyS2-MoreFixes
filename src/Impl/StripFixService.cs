@@ -25,17 +25,17 @@ public class StripFixService : IStripFixService
     private IUnmanagedFunction<CGamePlayerEquip__Precache_t>? _hook1;
     private Guid _hook1Id;
 
-    private unsafe delegate void CGamePlayerEquip__Use_t(nint self, InputData_t* inputData);
-    private IUnmanagedFunction<CGamePlayerEquip__Use_t>? _hook2;
+    private unsafe delegate void CGamePlayerEquip__PlayerInput_t(nint self, InputData_t* inputData);
+    private IUnmanagedFunction<CGamePlayerEquip__PlayerInput_t>? _hook2;
     private Guid _hook2Id;
 
     private unsafe delegate void CGamePlayerEquip__InputTriggerForAllPlayers_t(nint pEntity, InputData_t* pInput);
     private IUnmanagedFunction<CGamePlayerEquip__InputTriggerForAllPlayers_t>? _hook3;
     private Guid _hook3Id;
 
-    private unsafe delegate void CGamePlayerEquip__InputTriggerForActivatedPlayer_t(nint pEntity, InputData_t* pInput);
-    private IUnmanagedFunction<CGamePlayerEquip__InputTriggerForActivatedPlayer_t>? _hook4;
+    private IUnmanagedFunction<CGamePlayerEquip__PlayerInput_t>? _hook4;
     private Guid _hook4Id;
+    private bool _installed;
 
     private readonly Dictionary<uint, HashSet<gear_slot_t>> _playerEquipDict = [];
     private const int MAX_EQUIPMENTS_SIZE = 32;
@@ -51,36 +51,62 @@ public class StripFixService : IStripFixService
 
     public void Install()
     {
+        if (_installed)
+        {
+            return;
+        }
+
         try
         {
+            var activatedPlayerAddress = _core.GameData.GetSignature("CGamePlayerEquip::InputTriggerForActivatedPlayer");
+            if (activatedPlayerAddress == 0)
+            {
+                throw new InvalidOperationException("无法找到 CGamePlayerEquip::InputTriggerForActivatedPlayer 签名。");
+            }
+
             Hook_CGamePlayerEquip_Precache();
-            Hook_CGamePlayerEquip_Use();
+            Hook_CGamePlayerEquip_Use(activatedPlayerAddress);
             Hook_CGamePlayerEquip_InputTriggerForAllPlayers();
-            Hook_CGamePlayerEquip_InputTriggerForActivatedPlayer();
+            Hook_CGamePlayerEquip_InputTriggerForActivatedPlayer(activatedPlayerAddress);
 
             _core.Event.OnMapLoad += OnMapLoad;
+            _installed = true;
 
             _logger.LogInformation($"{ServiceName} installed successfully");
         }
         catch (Exception ex)
         {
             _logger.LogError($"Failed to install {ServiceName}: {ex.Message}");
+            Uninstall();
             throw;
         }
     }
 
     public void Uninstall()
     {
-        _hook1?.RemoveHook(_hook1Id);
-        _hook2?.RemoveHook(_hook2Id);
-        _hook3?.RemoveHook(_hook3Id);
-        _hook4?.RemoveHook(_hook4Id);
+        RemoveHook(ref _hook1, ref _hook1Id);
+        RemoveHook(ref _hook2, ref _hook2Id);
+        RemoveHook(ref _hook3, ref _hook3Id);
+        RemoveHook(ref _hook4, ref _hook4Id);
 
         _core.Event.OnMapLoad -= OnMapLoad;
+        _installed = false;
 
         _playerEquipDict.Clear();
 
         _logger.LogInformation($"{ServiceName} uninstalled");
+    }
+
+    private static void RemoveHook<TDelegate>(ref IUnmanagedFunction<TDelegate>? hook, ref Guid hookId)
+        where TDelegate : Delegate
+    {
+        if (hook is not null && hookId != Guid.Empty)
+        {
+            hook.RemoveHook(hookId);
+        }
+
+        hook = null;
+        hookId = Guid.Empty;
     }
 
     private void OnMapLoad(IOnMapLoadEvent @event)
@@ -110,7 +136,7 @@ public class StripFixService : IStripFixService
         });
     }
 
-    private unsafe void Hook_CGamePlayerEquip_Use()
+    private unsafe void Hook_CGamePlayerEquip_Use(nint activatedPlayerAddress)
     {
         var pCGamePlayerEquipVTable = _core.Memory.GetVTableAddress("server", "CGamePlayerEquip");
         if (!pCGamePlayerEquipVTable.HasValue)
@@ -124,7 +150,16 @@ public class StripFixService : IStripFixService
             throw new Exception("Failed to find CBaseEntity::Use offset");
         }
 
-        _hook2 = _core.Memory.GetUnmanagedFunctionByVTable<CGamePlayerEquip__Use_t>(pCGamePlayerEquipVTable.Value, offset);
+        var useAddress = ((nint*)pCGamePlayerEquipVTable.Value)[offset];
+        if (useAddress == activatedPlayerAddress)
+        {
+            // 当前 Windows 的两个入口共用实现。ActivatedPlayer 已包含剥离逻辑，
+            // 只安装该 Hook，避免委托类型冲突和重复剥离/发放。
+            _logger.LogInformation("StripFix 的 Use 与 ActivatedPlayer 共用入口，仅安装一次玩家输入 Hook。");
+            return;
+        }
+
+        _hook2 = _core.Memory.GetUnmanagedFunctionByAddress<CGamePlayerEquip__PlayerInput_t>(useAddress);
         _hook2Id = _hook2.AddHook(original => (self, pInput) =>
         {
             var equipEntity = _core.Memory.ToSchemaClass<CGamePlayerEquip>(self);
@@ -154,10 +189,9 @@ public class StripFixService : IStripFixService
         });
     }
 
-    private unsafe void Hook_CGamePlayerEquip_InputTriggerForActivatedPlayer()
+    private unsafe void Hook_CGamePlayerEquip_InputTriggerForActivatedPlayer(nint address)
     {
-        var sig = _core.GameData.GetSignature("CGamePlayerEquip::InputTriggerForActivatedPlayer");
-        _hook4 = _core.Memory.GetUnmanagedFunctionByAddress<CGamePlayerEquip__InputTriggerForActivatedPlayer_t>(sig);
+        _hook4 = _core.Memory.GetUnmanagedFunctionByAddress<CGamePlayerEquip__PlayerInput_t>(address);
 
         if (_hook4 == null)
         {

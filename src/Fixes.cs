@@ -11,7 +11,7 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes
         Id = "ZombiEden.CS2.SwiftlyS2.Fixes",
         Name = "ZombiEden Fixes",
         Author = "ZombiEden",
-        Version = "1.1.6",
+        Version = "1.1.7",
         Description = "僵尸乐园 Fixes",
         Website = "https://zombieden.cn"
     )]
