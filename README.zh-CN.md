@@ -66,6 +66,7 @@
 | `sw_disable_subtick_movement`            | 禁用Subtick移动                                                         | `false` | SERVER_CAN_EXECUTE |
 | `sw_disable_subtick_shooting`            | 禁用Subtick射击                                                         | `false` | SERVER_CAN_EXECUTE |
 | `sw_map_steamids_enable`                 | 启用 steamid 过滤                                                       | `true`  | SERVER_CAN_EXECUTE |
+| `sw_mathcounterfix_enable`               | 启用 math_counter 浮点传值修复                                           | `true`  | SERVER_CAN_EXECUTE |
 
 ## 🛡️ 要求
 

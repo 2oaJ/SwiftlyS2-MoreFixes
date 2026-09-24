@@ -66,6 +66,7 @@ For KeyValue fixes, use the SwiftlyS2-specific [CS2-CustomIO-For-SW2](https://gi
 | `sw_disable_subtick_movement`            | Disables subtick movement.                                                                 | `false` | SERVER_CAN_EXECUTE |
 | `sw_disable_subtick_shooting`            | Disables subtick shooting.                                                                 | `false` | SERVER_CAN_EXECUTE |
 | `sw_map_steamids_enable`                 | Whether to make Steam ID's available to maps.                                              | `true`  | SERVER_CAN_EXECUTE |
+| `sw_mathcounterfix_enable`               | Enables math_counter float value output fix.                                               | `true`  | SERVER_CAN_EXECUTE |
 
 ## Requirements
 

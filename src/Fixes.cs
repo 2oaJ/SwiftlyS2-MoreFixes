@@ -45,6 +45,7 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes
             AddFixService<IPointViewControlFixService, PointViewControlFixService>(services, fixServiceFactories);
             AddFixService<ISteamIDFilterFixService, SteamIDFilterFixService>(services, fixServiceFactories);
             AddFixService<IBeamFixService, BeamFixService>(services, fixServiceFactories);
+            AddFixService<IMathCounterFixService, MathCounterFixService>(services, fixServiceFactories);
 
             var serviceProvider = services.BuildServiceProvider();
 
