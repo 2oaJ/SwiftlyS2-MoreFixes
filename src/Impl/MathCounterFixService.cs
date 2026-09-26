@@ -100,36 +100,46 @@ public class MathCounterFixService : IMathCounterFixService
 
         if (ctx.Params.EntityInstance is CLogicCase logic_case)
         {
-            var cases = logic_case.Case;
-            if (cases == null)
+            HandleLogicCase(logic_case, ref ctx);
+        }
+    }
+
+    private void HandleLogicCase(CLogicCase logic_case, ref AcceptInputEntityPreContext ctx)
+    {
+        if (!ctx.Params.VariantValue.TryGetFloat(out var fVal))
+        {
+            return;
+        }
+
+        var cases = logic_case.Case;
+        if (cases == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < cases.ElementCount; i++)
+        {
+            // this is broken, crashing
+            // caseVal = cases[i];
+
+            // hackfix
+            var pszCase = Marshal.ReadIntPtr(cases.Address + i * 8);
+            if (pszCase == 0)
             {
-                return;
+                continue;
             }
 
-            for (int i = 0; i < cases.ElementCount; i++)
+            var sCase = Marshal.PtrToStringUTF8(pszCase);
+            if (sCase == null)
             {
-                // this is broken, crashing
-                // caseVal = cases[i];
+                continue;
+            }
 
-                // hackfix
-                var pszCase = Marshal.ReadIntPtr(cases.Address + i * 8);
-                if (pszCase == 0)
-                {
-                    continue;
-                }
-
-                var sCase = Marshal.PtrToStringUTF8(pszCase);
-                if (sCase == null)
-                {
-                    continue;
-                }
-
-                if (int.TryParse(sCase, out var val) && ctx.Params.VariantValue.DataType == VariantFieldType.FIELD_FLOAT32)
-                {
-                    ctx.SetHookResult(HookResult.Stop);
-                    logic_case.AcceptInput(ctx.Params.InputName, val);
-                    return;
-                }
+            if (int.TryParse(sCase, out var val) && val == (int)fVal)
+            {
+                ctx.SetHookResult(HookResult.Stop);
+                logic_case.AcceptInput(ctx.Params.InputName, val);
+                return;
             }
         }
     }
