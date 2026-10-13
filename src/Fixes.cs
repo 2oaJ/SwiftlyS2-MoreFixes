@@ -4,6 +4,7 @@ using SwiftlyS2.Shared;
 using SwiftlyS2.Shared.Plugins;
 using ZombiEden.CS2.SwiftlyS2.Fixes.Impl;
 using ZombiEden.CS2.SwiftlyS2.Fixes.Interface;
+using ZombiEden.CS2.SwiftlyS2.Fixes.Impl.Mapping;
 
 namespace ZombiEden.CS2.SwiftlyS2.Fixes
 {
@@ -46,6 +47,7 @@ namespace ZombiEden.CS2.SwiftlyS2.Fixes
             AddFixService<ISteamIDFilterFixService, SteamIDFilterFixService>(services, fixServiceFactories);
             AddFixService<IBeamFixService, BeamFixService>(services, fixServiceFactories);
             AddFixService<IMathCounterFixService, MathCounterFixService>(services, fixServiceFactories);
+            AddFixService<IScriptListenerService, ScriptListenerService>(services, fixServiceFactories);
 
             var serviceProvider = services.BuildServiceProvider();
 

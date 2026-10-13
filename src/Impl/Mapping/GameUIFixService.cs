@@ -9,7 +9,7 @@ using SwiftlyS2.Shared.Players;
 using SwiftlyS2.Shared.SchemaDefinitions;
 using ZombiEden.CS2.SwiftlyS2.Fixes.Interface;
 
-namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl
+namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl.Mapping
 {
     /// <summary>
     /// game_ui 修复服务。
