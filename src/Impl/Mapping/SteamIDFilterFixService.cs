@@ -9,7 +9,7 @@ using SwiftlyS2.Shared.Players;
 using SwiftlyS2.Shared.SchemaDefinitions;
 using ZombiEden.CS2.SwiftlyS2.Fixes.Interface;
 
-namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl;
+namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl.Mapping;
 
 // reference: https://github.com/Source2ZE/CS2Fixes/pull/317/changes
 public class SteamIDFilterFixService : ISteamIDFilterFixService

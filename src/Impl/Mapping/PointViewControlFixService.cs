@@ -8,7 +8,7 @@ using SwiftlyS2.Shared.Misc;
 using ZombiEden.CS2.SwiftlyS2.Fixes.Impl.CustomEntity;
 using ZombiEden.CS2.SwiftlyS2.Fixes.Interface;
 
-namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl;
+namespace ZombiEden.CS2.SwiftlyS2.Fixes.Impl.Mapping;
 
 public class PointViewControlFixService : IPointViewControlFixService
 {
