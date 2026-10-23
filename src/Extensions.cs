@@ -11,14 +11,32 @@ public static class Extensions
     private static ISwiftlyCore? _core;
     private static Type? _nativeCEntityKeyValues;
     private static MethodInfo? _fnNativeCEntityKeyValues__GetString;
-    private static MethodInfo? _fnNativeCEntityKeyValues__GetFloat;
+    private static MethodInfo? _fnNativeCEntityKeyValues__GetValue;
+
+    private enum CEntityKeyValuesValueKind
+    {
+        Bool,
+        Int32,
+        UInt32,
+        Int64,
+        UInt64,
+        Float,
+        Double,
+        Ptr,
+        StringToken,
+        Color,
+        Vector,
+        Vector2D,
+        Vector4D,
+        QAngle
+    }
 
     public static void Setup(ISwiftlyCore core)
     {
         _core = core;
         _nativeCEntityKeyValues = Type.GetType("SwiftlyS2.Core.Natives.NativeCEntityKeyValues, SwiftlyS2.CS2");
         _fnNativeCEntityKeyValues__GetString = _nativeCEntityKeyValues!.GetMethod("GetString", BindingFlags.Public | BindingFlags.Static | BindingFlags.InvokeMethod);
-        _fnNativeCEntityKeyValues__GetFloat = _nativeCEntityKeyValues!.GetMethod("GetFloat", BindingFlags.Public | BindingFlags.Static | BindingFlags.InvokeMethod);
+        _fnNativeCEntityKeyValues__GetValue = _nativeCEntityKeyValues!.GetMethod("GetValue", BindingFlags.Public | BindingFlags.Static | BindingFlags.InvokeMethod);
     }
 
     public static bool IsPlayerAlive(this CCSPlayerPawn? pawn)
@@ -120,6 +138,13 @@ public static class Extensions
 
     public static float NativeCEntityKeyValues__GetFloat(nint pEntityKv, string key)
     {
-        return (float)_fnNativeCEntityKeyValues__GetFloat!.Invoke(null, [pEntityKv, key])!;
+        float value = default;
+
+        unsafe
+        {
+            _ = _fnNativeCEntityKeyValues__GetValue!.Invoke(null, [pEntityKv, key, CEntityKeyValuesValueKind.Float, (nint)(&value)])!;
+        }
+
+        return value;
     }
 }

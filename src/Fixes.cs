@@ -3,8 +3,8 @@ using Microsoft.Extensions.Logging;
 using SwiftlyS2.Shared;
 using SwiftlyS2.Shared.Plugins;
 using ZombiEden.CS2.SwiftlyS2.Fixes.Impl;
-using ZombiEden.CS2.SwiftlyS2.Fixes.Interface;
 using ZombiEden.CS2.SwiftlyS2.Fixes.Impl.Mapping;
+using ZombiEden.CS2.SwiftlyS2.Fixes.Interface;
 
 namespace ZombiEden.CS2.SwiftlyS2.Fixes
 {
