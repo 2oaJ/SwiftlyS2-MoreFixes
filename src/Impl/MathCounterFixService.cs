@@ -4,7 +4,6 @@ using SwiftlyS2.Shared.Convars;
 using SwiftlyS2.Shared.Events;
 using SwiftlyS2.Shared.GameHooks;
 using SwiftlyS2.Shared.Misc;
-using SwiftlyS2.Shared.Natives;
 using SwiftlyS2.Shared.SchemaDefinitions;
 using System.Runtime.InteropServices;
 using ZombiEden.CS2.SwiftlyS2.Fixes.Interface;
