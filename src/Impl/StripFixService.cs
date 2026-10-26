@@ -1,8 +1,11 @@
 ﻿using Microsoft.Extensions.Logging;
 using SwiftlyS2.Shared;
+using SwiftlyS2.Shared.EntitySystem;
 using SwiftlyS2.Shared.Events;
+using SwiftlyS2.Shared.GameHooks;
 using SwiftlyS2.Shared.Memory;
 using SwiftlyS2.Shared.Misc;
+using SwiftlyS2.Shared.Natives;
 using SwiftlyS2.Shared.SchemaDefinitions;
 using ZombiEden.CS2.SwiftlyS2.Fixes.Interface;
 using ZombiEden.CS2.SwiftlyS2.Fixes.Sdk;
@@ -25,16 +28,10 @@ public class StripFixService : IStripFixService
     private IUnmanagedFunction<CGamePlayerEquip__Precache_t>? _hook1;
     private Guid _hook1Id;
 
-    private unsafe delegate void CGamePlayerEquip__PlayerInput_t(nint self, InputData_t* inputData);
-    private IUnmanagedFunction<CGamePlayerEquip__PlayerInput_t>? _hook2;
+    private unsafe delegate void CGamePlayerEquip__Use_t(nint self, InputData_t* inputData);
+    private IUnmanagedFunction<CGamePlayerEquip__Use_t>? _hook2;
     private Guid _hook2Id;
 
-    private unsafe delegate void CGamePlayerEquip__InputTriggerForAllPlayers_t(nint pEntity, InputData_t* pInput);
-    private IUnmanagedFunction<CGamePlayerEquip__InputTriggerForAllPlayers_t>? _hook3;
-    private Guid _hook3Id;
-
-    private IUnmanagedFunction<CGamePlayerEquip__PlayerInput_t>? _hook4;
-    private Guid _hook4Id;
     private bool _installed;
 
     private readonly Dictionary<uint, HashSet<gear_slot_t>> _playerEquipDict = [];
@@ -66,10 +63,11 @@ public class StripFixService : IStripFixService
 
             Hook_CGamePlayerEquip_Precache();
             Hook_CGamePlayerEquip_Use(activatedPlayerAddress);
-            Hook_CGamePlayerEquip_InputTriggerForAllPlayers();
-            Hook_CGamePlayerEquip_InputTriggerForActivatedPlayer(activatedPlayerAddress);
 
             _core.Event.OnMapLoad += OnMapLoad;
+
+            _core.GameHooks.Entities.AcceptInput.Pre += OnEntityIdentityAcceptInput;
+
             _installed = true;
 
             _logger.LogInformation($"{ServiceName} installed successfully");
@@ -86,10 +84,11 @@ public class StripFixService : IStripFixService
     {
         RemoveHook(ref _hook1, ref _hook1Id);
         RemoveHook(ref _hook2, ref _hook2Id);
-        RemoveHook(ref _hook3, ref _hook3Id);
-        RemoveHook(ref _hook4, ref _hook4Id);
 
         _core.Event.OnMapLoad -= OnMapLoad;
+
+        _core.GameHooks.Entities.AcceptInput.Pre -= OnEntityIdentityAcceptInput;
+
         _installed = false;
 
         _playerEquipDict.Clear();
@@ -131,8 +130,17 @@ public class StripFixService : IStripFixService
         _hook1 = _core.Memory.GetUnmanagedFunctionByVTable<CGamePlayerEquip__Precache_t>(pCGamePlayerEquipVTable.Value, offset);
         _hook1Id = _hook1.AddHook(original => (self, pContext) =>
         {
-            original()(self, pContext);
-            CGamePlayerEquip_OnPrecache(pContext->m_pKeyValues);
+            using var filteredKV = new CEntityKeyValues();
+
+            if (!CGamePlayerEquip_OnPrecache(pContext->m_pKeyValues, filteredKV))
+            {
+                original()(self, pContext);
+                return;
+            }
+
+            CEntityPrecacheContext context = *pContext;
+            context.m_pKeyValues = filteredKV.Address;
+            original()(self, &context);
         });
     }
 
@@ -159,7 +167,7 @@ public class StripFixService : IStripFixService
             return;
         }
 
-        _hook2 = _core.Memory.GetUnmanagedFunctionByAddress<CGamePlayerEquip__PlayerInput_t>(useAddress);
+        _hook2 = _core.Memory.GetUnmanagedFunctionByAddress<CGamePlayerEquip__Use_t>(useAddress);
         _hook2Id = _hook2.AddHook(original => (self, pInput) =>
         {
             var equipEntity = _core.Memory.ToSchemaClass<CGamePlayerEquip>(self);
@@ -168,65 +176,30 @@ public class StripFixService : IStripFixService
         });
     }
 
-    private unsafe void Hook_CGamePlayerEquip_InputTriggerForAllPlayers()
-    {
-        var sig = _core.GameData.GetSignature("CGamePlayerEquip::InputTriggerForAllPlayers");
-        _hook3 = _core.Memory.GetUnmanagedFunctionByAddress<CGamePlayerEquip__InputTriggerForAllPlayers_t>(sig);
-
-        if (_hook3 == null)
-        {
-            throw new Exception("Failed to create unmanaged function for InputTriggerForAllPlayers");
-        }
-
-        _hook3Id = _hook3.AddHook(original =>
-        {
-            return (pEntity, pInput) =>
-            {
-                var equipEntity = _core.Memory.ToSchemaClass<CGamePlayerEquip>(pEntity);
-                CGamePlayerEquip_OnInputTriggerForAllPlayers(equipEntity, pInput);
-                original()(pEntity, pInput);
-            };
-        });
-    }
-
-    private unsafe void Hook_CGamePlayerEquip_InputTriggerForActivatedPlayer(nint address)
-    {
-        _hook4 = _core.Memory.GetUnmanagedFunctionByAddress<CGamePlayerEquip__PlayerInput_t>(address);
-
-        if (_hook4 == null)
-        {
-            throw new Exception("Failed to create unmanaged function for InputTriggerForActivatedPlayer");
-        }
-
-        _hook4Id = _hook4.AddHook(original =>
-        {
-            return (pEntity, pInput) =>
-            {
-                var equipEntity = _core.Memory.ToSchemaClass<CGamePlayerEquip>(pEntity);
-                bool shouldCallOriginal = CGamePlayerEquip_OnInputTriggerForActivatedPlayer(equipEntity, pInput);
-                if (shouldCallOriginal)
-                {
-                    original()(pEntity, pInput);
-                }
-            };
-        });
-    }
-
-    private void CGamePlayerEquip_OnPrecache(nint pEntityKV)
+    private bool CGamePlayerEquip_OnPrecache(nint pEntityKV, CEntityKeyValues filteredKV)
     {
         var hammerUniqueId = NativeCEntityKeyValues__GetString(pEntityKV, "hammerUniqueId");
-        if (string.IsNullOrEmpty(hammerUniqueId))
-        {
-            return;
-        }
-
         var weapons = new HashSet<gear_slot_t>();
+        bool bFiltered = false;
+
         for (int i = 0; i < MAX_EQUIPMENTS_SIZE; i++)
         {
-            var val = NativeCEntityKeyValues__GetString(pEntityKV, $"weapon{i}");
+            var key = $"weapon{i}";
+            var val = NativeCEntityKeyValues__GetString(pEntityKV, key);
+
             if (string.IsNullOrEmpty(val))
             {
                 continue;
+            }
+
+            // Precaching item_* classes crashes since the 2026-10-22 CS2 update
+            if (val.StartsWith("item_", StringComparison.OrdinalIgnoreCase))
+            {
+                bFiltered = true;
+            }
+            else
+            {
+                filteredKV.SetString(key, val);
             }
 
             if (ItemHelper.WeaponGearSlotDict.TryGetValue(val, out var slot))
@@ -235,11 +208,13 @@ public class StripFixService : IStripFixService
             }
         }
 
-        if (weapons.Count > 0)
+        if (!string.IsNullOrEmpty(hammerUniqueId) && weapons.Count > 0)
         {
             var hEntity = MurmurHash2.HashStringLowercase(hammerUniqueId, ENTITY_MURMURHASH_SEED);
             _playerEquipDict[hEntity] = weapons;
         }
+
+        return bFiltered;
     }
 
     private unsafe void CGamePlayerEquip_OnUse(CGamePlayerEquip entity, InputData_t* pInput)
@@ -261,7 +236,29 @@ public class StripFixService : IStripFixService
         }
     }
 
-    private unsafe void CGamePlayerEquip_OnInputTriggerForAllPlayers(CGamePlayerEquip entity, InputData_t* pInput)
+    private void OnEntityIdentityAcceptInput(ref AcceptInputEntityPreContext ctx)
+    {
+        if (ctx.Params.EntityInstance is not CGamePlayerEquip game_player_equip)
+        {
+            return;
+        }
+
+        var inputName = ctx.Params.InputName;
+
+        if (string.Equals(inputName, "TriggerForAllPlayers", StringComparison.OrdinalIgnoreCase))
+        {
+            CGamePlayerEquip_OnInputTriggerForAllPlayers(game_player_equip);
+        }
+        else if (string.Equals(inputName, "TriggerForActivatedPlayer", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!CGamePlayerEquip_OnInputTriggerForActivatedPlayer(game_player_equip, ctx.Params.Activator?.Address, ctx.Params.VariantValue))
+            {
+                ctx.SetHookResult(HookResult.Stop);
+            }
+        }
+    }
+
+    private void CGamePlayerEquip_OnInputTriggerForAllPlayers(CGamePlayerEquip entity)
     {
         uint flags = entity.Spawnflags;
         if ((flags & SF_PLAYEREQUIP_STRIPFIRST) != 0)
@@ -290,9 +287,14 @@ public class StripFixService : IStripFixService
         }
     }
 
-    private unsafe bool CGamePlayerEquip_OnInputTriggerForActivatedPlayer(CGamePlayerEquip entity, InputData_t* pInput)
+    private bool CGamePlayerEquip_OnInputTriggerForActivatedPlayer(CGamePlayerEquip entity, nint? pActivator, in CVariant<CVariantDefaultAllocator> value)
     {
-        var caller = _core.EntitySystem.GetEntityByAddress(pInput->pActivator);
+        if (!pActivator.HasValue)
+        {
+            return true;
+        }
+
+        var caller = _core.EntitySystem.GetEntityByAddress(pActivator.Value);
         if (caller is not CCSPlayerPawn pawn)
         {
             return true;
@@ -314,7 +316,7 @@ public class StripFixService : IStripFixService
             return true;
         }
 
-        if (pInput->value.TryGetString(out var weaponName) && !string.IsNullOrEmpty(weaponName) && weaponName != "(null)")
+        if (value.TryGetString(out var weaponName) && !string.IsNullOrEmpty(weaponName) && weaponName != "(null)")
         {
             itemServices.GiveItem(weaponName);
             return false;
