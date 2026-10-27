@@ -55,14 +55,8 @@ public class StripFixService : IStripFixService
 
         try
         {
-            var activatedPlayerAddress = _core.GameData.GetSignature("CGamePlayerEquip::InputTriggerForActivatedPlayer");
-            if (activatedPlayerAddress == 0)
-            {
-                throw new InvalidOperationException("无法找到 CGamePlayerEquip::InputTriggerForActivatedPlayer 签名。");
-            }
-
             Hook_CGamePlayerEquip_Precache();
-            Hook_CGamePlayerEquip_Use(activatedPlayerAddress);
+            Hook_CGamePlayerEquip_Use();
 
             _core.Event.OnMapLoad += OnMapLoad;
 
@@ -144,7 +138,7 @@ public class StripFixService : IStripFixService
         });
     }
 
-    private unsafe void Hook_CGamePlayerEquip_Use(nint activatedPlayerAddress)
+    private unsafe void Hook_CGamePlayerEquip_Use()
     {
         var pCGamePlayerEquipVTable = _core.Memory.GetVTableAddress("server", "CGamePlayerEquip");
         if (!pCGamePlayerEquipVTable.HasValue)
@@ -158,16 +152,7 @@ public class StripFixService : IStripFixService
             throw new Exception("Failed to find CBaseEntity::Use offset");
         }
 
-        var useAddress = ((nint*)pCGamePlayerEquipVTable.Value)[offset];
-        if (useAddress == activatedPlayerAddress)
-        {
-            // 当前 Windows 的两个入口共用实现。ActivatedPlayer 已包含剥离逻辑，
-            // 只安装该 Hook，避免委托类型冲突和重复剥离/发放。
-            _logger.LogInformation("StripFix 的 Use 与 ActivatedPlayer 共用入口，仅安装一次玩家输入 Hook。");
-            return;
-        }
-
-        _hook2 = _core.Memory.GetUnmanagedFunctionByAddress<CGamePlayerEquip__Use_t>(useAddress);
+        _hook2 = _core.Memory.GetUnmanagedFunctionByVTable<CGamePlayerEquip__Use_t>(pCGamePlayerEquipVTable.Value, offset);
         _hook2Id = _hook2.AddHook(original => (self, pInput) =>
         {
             var equipEntity = _core.Memory.ToSchemaClass<CGamePlayerEquip>(self);
